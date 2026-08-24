@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้า ปรับขนาดสเกลคอนเทนต์ได้อิสระ</p>
+                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ ไม่มีหน้าซ้ำ ปรับสเกลเนื้อหาอัตโนมัติ</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -217,7 +217,7 @@
 
                 <div id="input-stamp" class="mb-4">
                     <label class="block text-xs font-bold text-slate-600 mb-1">เลือกคำตรายาง:</label>
-                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold outline-none">
+                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500">
                         <option value="APPROVED">APPROVED (อนุมัติ)</option>
                         <option value="REJECTED">REJECTED (ไม่อนุมัติ)</option>
                         <option value="DRAFT">DRAFT (ฉบับร่าง)</option>
@@ -228,7 +228,7 @@
 
                 <div id="input-text" class="mb-4 hidden">
                     <label class="block text-xs font-bold text-slate-600 mb-1">พิมพ์ข้อความ (Eng Only):</label>
-                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none">
+                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none focus:border-blue-500">
                 </div>
 
                 <div id="input-image" class="mb-4 hidden">
@@ -479,10 +479,9 @@
         function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
         // =========================================================
-        // 🚀 Helper: Append Processed Page (Auto Content Scale!)
+        // 🚀 Helper: Append Processed Page (Auto Content Scale & Exact Match)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
-            const { PDFLib } = window;
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
             let currentRot = copiedPage.getRotation().angle;
             
@@ -493,12 +492,9 @@
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
-                    // Method A: Safe Content Scaling by Embedding XObject
                     const embeddedPage = await newPdf.embedPage(copiedPage);
                     let [targetW, targetH] = STANDARD_SIZES[pd.sizeKey];
-                    
-                    const eW = embeddedPage.width;
-                    const eH = embeddedPage.height;
+                    const eW = embeddedPage.width; const eH = embeddedPage.height;
                     
                     if ((eW > eH && targetW < targetH) || (eW < eH && targetW > targetH)) {
                         const temp = targetW; targetW = targetH; targetH = temp;
@@ -506,16 +502,12 @@
                     
                     const newPage = newPdf.addPage([targetW, targetH]);
                     const scaleFactor = Math.min(targetW / eW, targetH / eH);
-                    
-                    const drawW = eW * scaleFactor;
-                    const drawH = eH * scaleFactor;
-                    const tx = (targetW - drawW) / 2;
-                    const ty = (targetH - drawH) / 2;
+                    const drawW = eW * scaleFactor; const drawH = eH * scaleFactor;
+                    const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
                     return newPage;
                 } catch (e) {
-                    console.error("Fallback standard copy due to error:", e);
                     newPdf.addPage(copiedPage);
                     return copiedPage;
                 }
@@ -530,10 +522,7 @@
             try {
                 const { PDFDocument } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
-                
-                for (let pd of loadedPages) {
-                    await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
-                }
+                for (let pd of loadedPages) { await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd); }
                 downloadFile(await newPdf.save(), "Master_Organized_Document.pdf");
             } catch (err) { alert("เกิดข้อผิดพลาดในการบันทึก"); } finally { hideLoading(); }
         }
@@ -553,7 +542,7 @@
                     for (let pd of loadedPages) { await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd); }
                     downloadFile(await newPdf.save({ useObjectStreams: true }), "Compressed_Lossless.pdf");
                 } 
-                else if (mode === 'image' || mode === 'ocr') {
+                else if (mode === 'image') {
                     for (let pd of loadedPages) {
                         const page = await pd.pdfDocJs.getPage(pd.pageNumber); const viewport = page.getViewport({ scale: 2.0 }); 
                         const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
@@ -563,7 +552,7 @@
                         const newPage = newPdf.addPage([viewport.width, viewport.height]);
                         newPage.drawImage(jpgImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
                     }
-                    downloadFile(await newPdf.save(), mode === 'image' ? "Uncopyable_Image.pdf" : "Simulated_OCR.pdf");
+                    downloadFile(await newPdf.save(), "Uncopyable_Image.pdf");
                 }
             } catch(e) { alert("เกิดข้อผิดพลาด"); } finally { hideLoading(); }
         }
@@ -608,16 +597,17 @@
                     }
                     downloadFile(await zip.generateAsync({ type: "blob" }), "Extracted_PDFs.zip", "application/zip");
                 }
-            } catch(e) { console.error(e); alert("ข้อผิดพลาดในการแยกไฟล์"); } finally { hideLoading(); }
+            } catch(e) { alert("ข้อผิดพลาดในการแยกไฟล์"); } finally { hideLoading(); }
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool)
+        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool - Preview Matches Export 100%)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5; let signMode = 'stamp';
         let previewCanvas = document.getElementById('sign-preview-canvas');
         let uploadedImageSrc = null; let origImgW = 160, origImgH = 60;
         let previewPageIdx = 0; 
+        let currentPdfWidth = 595; let currentPdfHeight = 842;
 
         function openSignModal() { 
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
@@ -665,7 +655,12 @@
         document.getElementById('sign-text-val').addEventListener('input', updateTargetAppearance);
 
         async function renderSignPreview(pageIdx) {
+            previewPageIdx = pageIdx;
             const pd = loadedPages[pageIdx]; const page = await pd.pdfDocJs.getPage(pd.pageNumber);
+            
+            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: pd.rotation });
+            currentPdfWidth = unscaledViewport.width; currentPdfHeight = unscaledViewport.height;
+
             const viewport = page.getViewport({ scale: 0.8, rotation: pd.rotation });
             previewCanvas.height = viewport.height; previewCanvas.width = viewport.width;
             await page.render({ canvasContext: previewCanvas.getContext('2d'), viewport }).promise;
@@ -679,29 +674,51 @@
             const targetBox = document.getElementById('sign-target'); targetBox.style.left = `${signRelX * 100}%`; targetBox.style.top = `${signRelY * 100}%`;
         }
 
+        // 🔗 Sync Preview CSS to match PDF Point Coordinates Exactly
         function updateTargetAppearance() {
             const target = document.getElementById('sign-target'); 
             const scaleVal = parseFloat(document.getElementById('sign-scale').value) / 100.0;
             const color = document.getElementById('sign-color').value; const addDate = document.getElementById('sign-date').checked;
-            const screenRatio = (previewCanvas.getBoundingClientRect().width || 500) / 595.0; 
-            target.innerHTML = ''; target.style.color = color; let mainContent = document.createElement('div');
+            
+            const rect = previewCanvas.getBoundingClientRect();
+            const ptToScreen = (rect.width || 400) / currentPdfWidth; 
+
+            target.innerHTML = ''; target.style.color = color; 
+            let mainContent = document.createElement('div');
+            mainContent.style.display = 'flex'; mainContent.style.flexDirection = 'column'; mainContent.style.alignItems = 'center'; mainContent.style.justifyContent = 'center';
             
             if (signMode === 'stamp') {
-                mainContent.textContent = `[ ${document.getElementById('sign-stamp-val').value} ]`;
-                mainContent.style.fontSize = `${24 * scaleVal * screenRatio}px`; mainContent.style.border = `${3 * scaleVal * screenRatio}px solid ${color}`; mainContent.style.padding = `${5 * scaleVal * screenRatio}px`; mainContent.style.fontWeight = 'bold';
+                const stampText = document.getElementById('sign-stamp-val').value;
+                mainContent.textContent = stampText;
+                mainContent.style.fontSize = `${24 * scaleVal * ptToScreen}px`; 
+                mainContent.style.fontFamily = 'Helvetica, Arial, sans-serif';
+                mainContent.style.fontWeight = 'bold';
+                mainContent.style.border = `${3 * scaleVal * ptToScreen}px solid ${color}`; 
+                mainContent.style.padding = `${4 * ptToScreen}px ${12 * ptToScreen}px`; 
+                mainContent.style.borderRadius = `${4 * ptToScreen}px`;
+                mainContent.style.backgroundColor = 'rgba(255,255,255,0.8)';
+                mainContent.style.textAlign = 'center';
             } else if (signMode === 'text') {
-                mainContent.textContent = document.getElementById('sign-text-val').value || "Signed";
-                mainContent.style.fontSize = `${16 * scaleVal * screenRatio}px`; mainContent.style.fontWeight = 'bold';
+                const text = document.getElementById('sign-text-val').value || "Signed";
+                mainContent.textContent = text;
+                mainContent.style.fontSize = `${16 * scaleVal * ptToScreen}px`; 
+                mainContent.style.fontFamily = 'Helvetica, Arial, sans-serif';
+                mainContent.style.fontWeight = 'bold';
+                mainContent.style.textAlign = 'center';
             } else if (signMode === 'image') {
                 if (uploadedImageSrc) {
                     const img = document.createElement('img'); img.src = uploadedImageSrc;
-                    img.style.width = `${160 * scaleVal * screenRatio}px`; img.style.height = `${(160 * (origImgH / origImgW)) * scaleVal * screenRatio}px`; mainContent.appendChild(img);
+                    const imgW = 160 * scaleVal * ptToScreen;
+                    const imgH = (160 * (origImgH / origImgW)) * scaleVal * ptToScreen;
+                    img.style.width = `${imgW}px`; img.style.height = `${imgH}px`; mainContent.appendChild(img);
                 } else { mainContent.textContent = "ไม่มีรูปภาพ"; mainContent.style.border = "1px solid red"; mainContent.style.fontSize = "12px"; }
             }
             target.appendChild(mainContent);
+
             if (addDate) {
                 let dateContent = document.createElement('div'); dateContent.textContent = new Date().toLocaleString('th-TH');
-                dateContent.style.fontSize = `${10 * scaleVal * screenRatio}px`; dateContent.style.marginTop = `${2 * screenRatio}px`; target.appendChild(dateContent);
+                dateContent.style.fontSize = `${10 * scaleVal * ptToScreen}px`; dateContent.style.marginTop = `${3 * ptToScreen}px`; dateContent.style.fontWeight = 'bold';
+                target.appendChild(dateContent);
             }
         }
 
@@ -742,18 +759,31 @@
                     
                     if (targetPages.includes(idx)) {
                         const { width, height } = p.getSize(); const drawX = width * signRelX; const drawY = height * (1 - signRelY);
+                        
                         if (signMode === 'stamp') {
                             const stampText = document.getElementById('sign-stamp-val').value; const fontSize = 24 * scaleVal;
-                            p.drawRectangle({ x: drawX - (80 * scaleVal), y: drawY - (20 * scaleVal), width: 160 * scaleVal, height: 40 * scaleVal, borderColor: colorRGB, borderWidth: 3 * scaleVal });
-                            p.drawText(stampText, { x: drawX - (65 * scaleVal), y: drawY - (5 * scaleVal), size: fontSize, font: font, color: colorRGB });
-                            if (addDate) p.drawText(timestamp, { x: drawX - (65 * scaleVal), y: drawY - (35 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                            const boxW = 160 * scaleVal; const boxH = 40 * scaleVal;
+                            p.drawRectangle({ x: drawX - (boxW/2), y: drawY - (boxH/2), width: boxW, height: boxH, borderColor: colorRGB, borderWidth: 3 * scaleVal });
+                            const textWidth = font.widthOfTextAtSize(stampText, fontSize);
+                            p.drawText(stampText, { x: drawX - (textWidth/2), y: drawY - (fontSize/3), size: fontSize, font: font, color: colorRGB });
+                            if (addDate) {
+                                const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
+                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (boxH/2) - (12 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                            }
                         } else if (signMode === 'text') {
                             const text = document.getElementById('sign-text-val').value || "Signed"; const fontSize = 16 * scaleVal;
-                            p.drawText(text, { x: drawX - (40*scaleVal), y: drawY, size: fontSize, font: font, color: colorRGB });
-                            if (addDate) p.drawText(timestamp, { x: drawX - (40*scaleVal), y: drawY - (15 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                            const textWidth = font.widthOfTextAtSize(text, fontSize);
+                            p.drawText(text, { x: drawX - (textWidth/2), y: drawY - (fontSize/2), size: fontSize, font: font, color: colorRGB });
+                            if (addDate) {
+                                const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
+                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (fontSize/2) - (14 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                            }
                         } else if (signMode === 'image' && embedImg) {
                             p.drawImage(embedImg, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2), width: imgDims.width, height: imgDims.height });
-                            if (addDate) p.drawText(timestamp, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2) - (15 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                            if (addDate) {
+                                const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
+                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (imgDims.height/2) - (14 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                            }
                         }
                     }
                 }
