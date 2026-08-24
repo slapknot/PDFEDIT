@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PDF Master Tools - Pro Engineering Web Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,32 +13,49 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- SheetJS for Excel Extraction -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Mobile Drag & Drop Polyfill -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .drag-active { border-color: #10B981 !important; background-color: #ECFDF5 !important; }
-        .page-card { transition: box-shadow 0.1s ease, border-color 0.1s ease; }
+        .page-card { 
+            transition: box-shadow 0.1s ease, border-color 0.1s ease; 
+            /* ป้องกันการคลุมดำ Text เวลากดค้างบนมือถือ */
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
         .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); background-color: rgba(37, 99, 235, 0.03); }
         .page-card.dragging { opacity: 0.5; border: 2px dashed #2563EB; }
+        
+        /* สกอร์บาร์ที่ดูเรียบร้อยขึ้นบน Desktop/Mobile */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
 
     <!-- Top Navigation -->
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-14 sm:h-16 items-center">
                 <div class="flex items-center">
-                    <span class="text-2xl mr-2">📄</span>
-                    <span class="font-bold text-xl text-blue-600">PDF Master Tools</span>
-                    <span class="ml-3 px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Pro Engineering Edition</span>
+                    <span class="text-xl sm:text-2xl mr-1 sm:mr-2">📄</span>
+                    <span class="font-bold text-lg sm:text-xl text-blue-600 truncate">PDF Master Tools</span>
+                    <span class="ml-2 sm:ml-3 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">Pro Edition</span>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <span id="page-counter" class="text-sm font-semibold text-slate-500">ยังไม่ได้โหลดเอกสาร</span>
-                    <button onclick="saveOrganizerPDF()" id="btn-save" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition">
-                        💾 บันทึกไฟล์หลัก (Save PDF)
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <span id="page-counter" class="text-[10px] sm:text-sm font-semibold text-slate-500 hidden sm:inline-block">ยังไม่ได้โหลดเอกสาร</span>
+                    <button onclick="saveOrganizerPDF()" id="btn-save" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold shadow-sm transition whitespace-nowrap">
+                        💾 บันทึก PDF
                     </button>
                 </div>
             </div>
@@ -46,21 +63,21 @@
     </nav>
 
     <!-- Main Workspace -->
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full flex flex-col">
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 flex-1 w-full flex flex-col">
         
         <!-- Drop Zone -->
-        <div id="drop-zone" class="border-2 border-dashed border-blue-500 rounded-xl bg-white p-8 text-center cursor-pointer hover:bg-blue-50 transition-all shadow-sm relative mb-6">
+        <div id="drop-zone" class="border-2 border-dashed border-blue-500 rounded-xl bg-white p-6 sm:p-8 text-center cursor-pointer hover:bg-blue-50 transition-all shadow-sm relative mb-4 sm:mb-6">
             <input type="file" id="file-input" class="hidden" multiple accept="application/pdf">
             <div id="drop-content" class="pointer-events-none">
-                <span class="text-4xl block mb-2">📥</span>
-                <p class="text-blue-600 font-bold text-lg">ลากไฟล์ PDF มาวางที่นี่ (Drag & Drop) หรือคลิกเพื่อเลือกไฟล์</p>
-                <p class="text-slate-400 text-sm mt-1">เครื่องมือบนเว็บทำงานผ่านเบราว์เซอร์ 100% ปลอดภัย ไม่ต้องอัปโหลดขึ้นเซิร์ฟเวอร์</p>
+                <span class="text-3xl sm:text-4xl block mb-2">📥</span>
+                <p class="text-blue-600 font-bold text-base sm:text-lg">แตะที่นี่เพื่อเลือกไฟล์ PDF</p>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">ทำงานผ่านเบราว์เซอร์ 100% ปลอดภัย ไม่ต้องอัปโหลดขึ้นเซิร์ฟเวอร์</p>
             </div>
             
-            <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
-                <div class="text-left">
-                    <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-emerald-600 text-xs font-bold mt-0.5">✅ แก้ไขระบบคลิก/ลากหน้าลื่นไหล 100% | พิกัดหมุนและลายเซ็นตรงเป๊ะไม่มีเพี้ยน</p>
+            <div id="file-info" class="hidden flex flex-col sm:flex-row items-center justify-between pointer-events-none gap-3">
+                <div class="text-center sm:text-left">
+                    <p id="file-name" class="text-slate-800 font-bold text-sm sm:text-base">โหลดเอกสารสำเร็จ</p>
+                    <p class="text-emerald-600 text-[10px] sm:text-xs font-bold mt-0.5">✅ รองรับการแตะค้าง 300ms เพื่อลากย้ายหน้าบนมือถือ</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -70,79 +87,85 @@
         </div>
 
         <!-- Organizer Toolbar -->
-        <div id="toolbar" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-3 items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <button onclick="selectAll()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">☑ เลือกทั้งหมด</button>
-                <button onclick="rotateSelected(90)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">⟳ หมุนหน้า</button>
-                <button onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">🗑 ลบ</button>
-                <div class="h-6 border-l border-slate-300 mx-2"></div>
-                <button onclick="undo()" id="btn-undo" class="text-slate-400 hover:text-slate-700 px-2 py-1.5 rounded-lg text-xs font-bold transition">↶ Undo</button>
-                <button onclick="redo()" id="btn-redo" class="text-slate-400 hover:text-slate-700 px-2 py-1.5 rounded-lg text-xs font-bold transition">↷ Redo</button>
+        <div id="toolbar" class="hidden bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col xl:flex-row gap-3 items-start xl:items-center justify-between">
+            <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                <button onclick="selectAll()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">☑ เลือกทั้งหมด</button>
+                <button id="btn-multi-select" onclick="toggleMultiSelect()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition border border-slate-200">👆 โหมดเลือกหลายหน้า: ปิด</button>
+                <button onclick="rotateSelected(90)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">⟳ หมุนหน้า</button>
+                <button onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">🗑 ลบ</button>
+                
+                <div class="h-5 border-l border-slate-300 mx-1 hidden sm:block"></div>
+                <button onclick="undo()" id="btn-undo" class="text-slate-400 hover:text-slate-700 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">↶ Undo</button>
+                <button onclick="redo()" id="btn-redo" class="text-slate-400 hover:text-slate-700 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">↷ Redo</button>
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="openSplitModal()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">✂️ แยกไฟล์ (Split)</button>
-                <button onclick="openSignModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">✍️ ประทับตรายาง/เซ็น</button>
+            <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                <button onclick="openSplitModal()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">✂️ แยกไฟล์</button>
+                <button onclick="openSignModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition">✍️ ประทับตรา/เซ็น</button>
             </div>
         </div>
 
+        <div id="mobile-hint" class="hidden text-xs text-blue-600 font-bold mb-3 bg-blue-50 p-2 rounded-lg border border-blue-200 text-center">
+            💡 วิธีใช้บนมือถือ: เปิด "โหมดเลือกหลายหน้า" แล้วแตะเลือกไฟล์ที่ต้องการ จากนั้น "แตะค้าง 1 วินาที" เพื่อลากย้ายแบบกลุ่ม
+        </div>
+
         <!-- Thumbnail Grid -->
-        <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto flex-1 pb-10">
+        <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 overflow-y-auto flex-1 pb-10">
             <div class="col-span-full text-center py-16 text-slate-400">
-                <p class="text-lg font-medium">ยังไม่มีไฟล์ในระบบ</p>
-                <p class="text-sm mt-1">กรุณาลากไฟล์ PDF มาวางด้านบนเพื่อเปิดใช้งานเครื่องมือทั้งหมด</p>
+                <p class="text-base sm:text-lg font-medium">ยังไม่มีไฟล์ในระบบ</p>
+                <p class="text-xs sm:text-sm mt-1">กรุณาเลือกไฟล์ PDF ด้านบนเพื่อเปิดใช้งานเครื่องมือทั้งหมด</p>
             </div>
         </div>
 
         <!-- Essential Tools Grid -->
-        <div class="mt-8 border-t pt-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">🛠️ เครื่องมือพื้นฐาน (Essential Tools)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">📑 จัดการ & รวมไฟล์</h4><p class="text-xs text-slate-500">จัดหน้า, หมุน, ลบ, รวมไฟล์</p></div>
-                    <button onclick="saveOrganizerPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+        <div class="mt-6 sm:mt-8 border-t pt-5 sm:pt-6">
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">🛠️ เครื่องมือพื้นฐาน (Essential Tools)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📑 จัดการ & รวมไฟล์</h4><p class="text-[10px] sm:text-xs text-slate-500">จัดหน้า, หมุน, ลบ, รวมไฟล์</p></div>
+                    <button onclick="saveOrganizerPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">✍️ ลายเซ็น & ตรายาง</h4><p class="text-xs text-slate-500">ประทับตรายาง, ย่อขยายรูปเซ็น</p></div>
-                    <button onclick="openSignModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">✍️ ลายเซ็น & ตรายาง</h4><p class="text-[10px] sm:text-xs text-slate-500">ประทับตรายาง, ย่อขยายรูปเซ็น</p></div>
+                    <button onclick="openSignModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h4><p class="text-xs text-slate-500">ลดขนาด, แปลงไฟล์ห้ามก๊อปปี้</p></div>
-                    <button onclick="openConvertModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลดขนาด, แปลงไฟล์ห้ามก๊อปปี้</p></div>
+                    <button onclick="openConvertModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์ (Redact)</h4><p class="text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
-                    <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
+                    <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">🔐 เข้ารหัสป้องกัน</h4><p class="text-xs text-slate-500">ตั้งรหัสผ่านล็อกไฟล์ PDF</p></div>
-                    <button onclick="toolProtect()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🔐 เข้ารหัสป้องกัน</h4><p class="text-[10px] sm:text-xs text-slate-500">ตั้งรหัสผ่านล็อกไฟล์ PDF</p></div>
+                    <button onclick="toolProtect()" class="bg-amber-500 hover:bg-amber-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">📝 แยกข้อความ (.txt)</h4><p class="text-xs text-slate-500">ดึงตัวอักษรลง Text ไฟล์</p></div>
-                    <button onclick="toolExtractText()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📝 แยกข้อความ</h4><p class="text-[10px] sm:text-xs text-slate-500">ดึงตัวอักษรลง Text ไฟล์</p></div>
+                    <button onclick="toolExtractText()" class="bg-slate-700 hover:bg-slate-800 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
             </div>
         </div>
 
         <!-- Engineering Pro Tools Grid -->
-        <div class="mt-8 border-t pt-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">⚙️ เครื่องมือวิศวกร (Engineering Tools)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-xs text-slate-500">ลากเมาส์คำนวณสเกล Drawing</p></div>
-                    <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+        <div class="mt-6 sm:mt-8 border-t pt-5 sm:pt-6">
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">⚙️ เครื่องมือวิศวกร (Engineering Tools)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-[10px] sm:text-xs text-slate-500">ลากเมาส์คำนวณสเกล Drawing</p></div>
+                    <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">🗺️ เปรียบเทียบแบบ</h4><p class="text-xs text-slate-500">ซ้อนทับไฟล์ P&ID แดง/น้ำเงิน</p></div>
-                    <button onclick="openCompareModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🗺️ เปรียบเทียบแบบ</h4><p class="text-[10px] sm:text-xs text-slate-500">ซ้อนทับไฟล์ P&ID แดง/น้ำเงิน</p></div>
+                    <button onclick="openCompareModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">📊 สกัดตาราง (Excel)</h4><p class="text-xs text-slate-500">ดึง Text ลงไฟล์ .xlsx</p></div>
-                    <button onclick="toolExtractExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📊 สกัดตาราง (Excel)</h4><p class="text-[10px] sm:text-xs text-slate-500">ดึง Text ลงไฟล์ .xlsx</p></div>
+                    <button onclick="toolExtractExcel()" class="bg-green-600 hover:bg-green-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">🔍 ไฮไลต์คำอัตโนมัติ</h4><p class="text-xs text-slate-500">ค้นหา Keyword และป้ายสีเหลือง</p></div>
-                    <button onclick="toolAutoHighlight()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🔍 ไฮไลต์คำอัตโนมัติ</h4><p class="text-[10px] sm:text-xs text-slate-500">ค้นหา Keyword และป้ายสีเหลือง</p></div>
+                    <button onclick="toolAutoHighlight()" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
             </div>
         </div>
@@ -150,9 +173,9 @@
     </main>
 
     <!-- Modal: Convert & Compress -->
-    <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-            <h3 class="font-bold text-xl text-slate-800 mb-4">🗜️ แปลง & บีบอัดไฟล์</h3>
+    <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
+            <h3 class="font-bold text-lg sm:text-xl text-slate-800 mb-4">🗜️ แปลง & บีบอัดไฟล์</h3>
             <div class="space-y-3 mb-6">
                 <label class="flex items-center space-x-3 p-3 border rounded-xl hover:bg-slate-50 cursor-pointer">
                     <input type="radio" name="convert-mode" value="lossless" checked class="w-4 h-4 text-blue-600">
@@ -165,7 +188,7 @@
                     <input type="radio" name="convert-mode" value="image" class="w-4 h-4 text-blue-600">
                     <div>
                         <span class="block font-bold text-sm">แปลงเป็นรูปภาพ (Uncopyable)</span>
-                        <span class="text-xs text-slate-500">แปลงให้เป็นภาพทั้งไฟล์ ป้องกันการ Drag copy 100%</span>
+                        <span class="text-xs text-slate-500">แปลงให้เป็นภาพทั้งไฟล์ ป้องกันการ Drag copy</span>
                     </div>
                 </label>
             </div>
@@ -177,21 +200,21 @@
     </div>
 
     <!-- Modal: Split Options -->
-    <div id="modal-split" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-            <h3 class="font-bold text-xl text-slate-800 mb-4">✂️ เลือกรูปแบบการแยกไฟล์ (Split PDF)</h3>
-            <div class="space-y-3 mb-6">
-                <button onclick="executeSplit('single')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
-                    <span class="block text-base mb-1">แยก "หน้าที่เลือก" ออกมาเป็น 1 ไฟล์</span>
-                    <span class="text-xs text-slate-400 font-normal">ดึงเฉพาะแผ่นที่เลือกไว้ไปรวมเป็น 1 เล่ม</span>
+    <div id="modal-split" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
+            <h3 class="font-bold text-lg sm:text-xl text-slate-800 mb-4">✂️ เลือกรูปแบบการแยกไฟล์ (Split)</h3>
+            <div class="space-y-2 sm:space-y-3 mb-5 sm:mb-6">
+                <button onclick="executeSplit('single')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-3 sm:p-4 rounded-xl transition border border-slate-200 shadow-sm">
+                    <span class="block text-sm sm:text-base font-semibold mb-1">แยก "หน้าที่เลือก" ออกมาเป็น 1 ไฟล์</span>
+                    <span class="text-[10px] sm:text-xs text-slate-400 font-normal">ดึงเฉพาะแผ่นที่เลือกไว้ไปรวมเป็น 1 เล่ม</span>
                 </button>
-                <button onclick="executeSplit('all')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
-                    <span class="block text-base mb-1">แยก "ทุกหน้า" ออกเป็นไฟล์ละ 1 หน้า</span>
-                    <span class="text-xs text-slate-400 font-normal">ระบบจะแพ็กรวมใส่ไฟล์ .zip มาให้</span>
+                <button onclick="executeSplit('all')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-3 sm:p-4 rounded-xl transition border border-slate-200 shadow-sm">
+                    <span class="block text-sm sm:text-base font-semibold mb-1">แยก "ทุกหน้า" ออกเป็นไฟล์ละ 1 หน้า</span>
+                    <span class="text-[10px] sm:text-xs text-slate-400 font-normal">ระบบจะแพ็กรวมใส่ไฟล์ .zip มาให้</span>
                 </button>
-                <button onclick="executeSplit('range')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
-                    <span class="block text-base mb-1">แยก "ตามช่วงหน้า" (Range)</span>
-                    <span class="text-xs text-slate-400 font-normal">แบ่งเป็นชุดๆ เช่น 1-3; 5-7 (ระบบจะแพ็กเป็น .zip)</span>
+                <button onclick="executeSplit('range')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-3 sm:p-4 rounded-xl transition border border-slate-200 shadow-sm">
+                    <span class="block text-sm sm:text-base font-semibold mb-1">แยก "ตามช่วงหน้า" (Range)</span>
+                    <span class="text-[10px] sm:text-xs text-slate-400 font-normal">แบ่งเป็นชุดๆ เช่น 1-3; 5-7 (ระบบจะแพ็กเป็น .zip)</span>
                 </button>
             </div>
             <button onclick="document.getElementById('modal-split').classList.add('hidden')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl text-sm font-bold transition">ยกเลิก</button>
@@ -199,25 +222,25 @@
     </div>
 
     <!-- Modal: Sign & Stamp -->
-    <div id="modal-sign" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col md:flex-row gap-6 h-[90vh] md:h-auto">
+    <div id="modal-sign" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col md:flex-row gap-4 sm:gap-6 h-[90vh] md:h-auto">
             
             <!-- Left: Settings -->
-            <div class="w-full md:w-1/2 flex flex-col overflow-y-auto pr-2">
-                <h3 class="font-bold text-xl text-slate-800 mb-4">✍️ ประทับตรายางและลายเซ็น</h3>
+            <div class="w-full md:w-1/2 flex flex-col overflow-y-auto pr-1 sm:pr-2">
+                <h3 class="font-bold text-lg sm:text-xl text-slate-800 mb-3 sm:mb-4">✍️ ประทับตรายางและลายเซ็น</h3>
                 
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-slate-600 mb-2">1. เลือกรูปแบบ (Mode):</label>
+                <div class="mb-3 sm:mb-4">
+                    <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1 sm:mb-2">1. เลือกรูปแบบ (Mode):</label>
                     <div class="flex bg-slate-100 rounded-lg p-1">
-                        <button onclick="setSignMode('stamp')" id="tab-stamp" class="flex-1 py-1.5 text-sm font-bold bg-white shadow-sm rounded-md text-blue-600">ตรายาง</button>
-                        <button onclick="setSignMode('text')" id="tab-text" class="flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700">ข้อความ</button>
-                        <button onclick="setSignMode('image')" id="tab-image" class="flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700">รูปภาพ</button>
+                        <button onclick="setSignMode('stamp')" id="tab-stamp" class="flex-1 py-1.5 text-xs sm:text-sm font-bold bg-white shadow-sm rounded-md text-blue-600">ตรายาง</button>
+                        <button onclick="setSignMode('text')" id="tab-text" class="flex-1 py-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-700">ข้อความ</button>
+                        <button onclick="setSignMode('image')" id="tab-image" class="flex-1 py-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-700">รูปภาพ</button>
                     </div>
                 </div>
 
-                <div id="input-stamp" class="mb-4">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">เลือกคำตรายาง:</label>
-                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500">
+                <div id="input-stamp" class="mb-3 sm:mb-4">
+                    <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">เลือกคำตรายาง:</label>
+                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500">
                         <option value="APPROVED">APPROVED (อนุมัติ)</option>
                         <option value="REJECTED">REJECTED (ไม่อนุมัติ)</option>
                         <option value="DRAFT">DRAFT (ฉบับร่าง)</option>
@@ -226,25 +249,25 @@
                     </select>
                 </div>
 
-                <div id="input-text" class="mb-4 hidden">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">พิมพ์ข้อความ (Eng Only):</label>
-                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none focus:border-blue-500">
+                <div id="input-text" class="mb-3 sm:mb-4 hidden">
+                    <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">พิมพ์ข้อความ (Eng Only):</label>
+                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-slate-50 outline-none focus:border-blue-500">
                 </div>
 
-                <div id="input-image" class="mb-4 hidden">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">อัปโหลดรูปลายเซ็น (PNG/JPG):</label>
-                    <input type="file" id="sign-image-val" accept="image/png, image/jpeg" class="w-full border rounded-lg p-2 text-sm bg-slate-50">
+                <div id="input-image" class="mb-3 sm:mb-4 hidden">
+                    <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">อัปโหลดรูปลายเซ็น (PNG/JPG):</label>
+                    <input type="file" id="sign-image-val" accept="image/png, image/jpeg" class="w-full border rounded-lg p-2 text-xs sm:text-sm bg-slate-50">
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">หน้าที่จะประทับ (เช่น all, 1, 1-3, 5):</label>
-                    <input type="text" id="sign-pages" value="all" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none font-bold text-blue-600">
+                <div class="mb-3 sm:mb-4">
+                    <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">หน้าที่จะประทับ (เช่น all, 1, 1-3, 5):</label>
+                    <input type="text" id="sign-pages" value="all" class="w-full border rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-slate-50 outline-none font-bold text-blue-600">
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">สี (Color):</label>
-                        <select id="sign-color" class="w-full border rounded-lg p-2 text-sm bg-slate-50 outline-none">
+                        <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">สี (Color):</label>
+                        <select id="sign-color" class="w-full border rounded-lg p-2 text-xs sm:text-sm bg-slate-50 outline-none">
                             <option value="black">⚫ สีดำ (Black)</option>
                             <option value="red">🔴 สีแดง (Red)</option>
                             <option value="blue">🔵 สีน้ำเงิน (Blue)</option>
@@ -252,32 +275,32 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">ขนาด (Scale %):</label>
+                        <label class="block text-[10px] sm:text-xs font-bold text-slate-600 mb-1">ขนาด (Scale %):</label>
                         <div class="flex items-center space-x-2">
                             <input type="range" id="sign-scale" min="20" max="300" value="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
-                            <span id="sign-scale-display" class="text-xs font-bold w-8">100%</span>
+                            <span id="sign-scale-display" class="text-[10px] sm:text-xs font-bold w-8">100%</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-6 flex items-center">
+                <div class="mb-5 sm:mb-6 flex items-center">
                     <input type="checkbox" id="sign-date" class="w-4 h-4 text-blue-600 rounded border-slate-300 mr-2">
-                    <label for="sign-date" class="text-sm font-bold text-slate-700">ประทับวันที่และเวลา</label>
+                    <label for="sign-date" class="text-xs sm:text-sm font-bold text-slate-700">ประทับวันที่และเวลา</label>
                 </div>
 
-                <div class="mt-auto flex space-x-2 pt-4 border-t">
-                    <button onclick="executeSignAndStamp()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">✅ บันทึกไฟล์ใหม่</button>
-                    <button onclick="document.getElementById('modal-sign').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-xl text-sm font-bold transition">ยกเลิก</button>
+                <div class="mt-auto flex space-x-2 pt-3 sm:pt-4 border-t">
+                    <button onclick="executeSignAndStamp()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm">✅ บันทึกไฟล์ใหม่</button>
+                    <button onclick="document.getElementById('modal-sign').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition">ยกเลิก</button>
                 </div>
             </div>
 
             <!-- Right: Interactive Preview -->
-            <div class="w-full md:w-1/2 flex flex-col bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative mt-4 md:mt-0">
-                <div class="bg-slate-200 p-2 border-b border-slate-300 flex justify-between items-center px-4">
-                    <span class="text-xs font-bold text-slate-600">🔍 พรีวิว: คลิกลากภาพลงบนกระดาษ</span>
-                    <select id="sign-preview-page" class="text-xs p-1 rounded border outline-none font-bold" onchange="renderSignPreview(parseInt(this.value))"></select>
+            <div class="w-full md:w-1/2 flex flex-col bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative mt-2 md:mt-0 min-h-[300px]">
+                <div class="bg-slate-200 p-2 border-b border-slate-300 flex justify-between items-center px-3 sm:px-4">
+                    <span class="text-[10px] sm:text-xs font-bold text-slate-600">🔍 พรีวิว: คลิกลากภาพลงบนกระดาษ</span>
+                    <select id="sign-preview-page" class="text-[10px] sm:text-xs p-1 rounded border outline-none font-bold" onchange="renderSignPreview(parseInt(this.value))"></select>
                 </div>
-                <div class="flex-1 relative overflow-auto flex items-center justify-center p-4 bg-slate-100" id="sign-preview-container">
+                <div class="flex-1 relative overflow-auto flex items-center justify-center p-3 sm:p-4 bg-slate-100" id="sign-preview-container">
                     <div class="relative inline-block shadow-md bg-white">
                         <canvas id="sign-preview-canvas" class="block max-h-[55vh] object-contain cursor-crosshair"></canvas>
                         <div id="sign-target" class="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center whitespace-nowrap transition-none cursor-move" style="top: 80%; left: 80%;"></div>
@@ -289,31 +312,30 @@
     </div>
 
     <!-- Modal: Measure Tool (อัปเดตใหม่) -->
-    <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง & พื้นที่ (ต่อเนื่อง)</h3>
-                <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button>
+    <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[85vh] sm:h-[90vh]">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h3 class="font-bold text-lg sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง & พื้นที่ (ต่อเนื่อง)</h3>
+                <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl">✖</button>
             </div>
             
             <!-- เครื่องมือควบคุมด้านบน -->
-            <div class="flex flex-wrap space-x-3 mb-4 items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <input type="file" id="measure-file" class="border p-2 text-sm rounded w-64 bg-white" accept="application/pdf">
+            <div class="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
+                <input type="file" id="measure-file" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded w-full sm:w-64 bg-white" accept="application/pdf">
                 
-                <!-- กล่องเลือกหน้า (จะแสดงเมื่อไฟล์มีหลายหน้า) -->
-                <select id="measure-page" class="border p-2 text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none" onchange="changeMeasurePage()">
-                </select>
+                <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none w-full sm:w-auto" onchange="changeMeasurePage()"></select>
                 
-                <div class="h-6 border-l border-slate-300 mx-1"></div>
+                <div class="h-6 border-l border-slate-300 mx-1 hidden sm:block"></div>
                 
-                <label class="text-sm font-bold text-slate-700">สเกลแบบ 1:</label>
-                <input type="number" id="measure-scale" value="100" class="border p-2 text-sm rounded w-20 font-bold bg-white outline-none" onchange="updateMeasureResult()">
+                <div class="flex items-center gap-2">
+                    <label class="text-[10px] sm:text-sm font-bold text-slate-700 whitespace-nowrap">สเกล 1:</label>
+                    <input type="number" id="measure-scale" value="100" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded w-16 sm:w-20 font-bold bg-white outline-none" onchange="updateMeasureResult()">
+                    <button onclick="clearMeasure()" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[10px] sm:text-sm font-bold transition shadow-sm whitespace-nowrap">🗑 ล้างเส้น</button>
+                </div>
                 
-                <button onclick="clearMeasure()" class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-bold transition ml-2 shadow-sm">🗑 ล้างเส้น</button>
-                
-                <div class="flex-1 flex justify-end flex-col items-end">
-                    <span class="text-2xl font-bold text-emerald-600 leading-none mb-1" id="measure-result-dist">ระยะรวม: 0.000 ม.</span>
-                    <span class="text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: 0.000 ตร.ม.</span>
+                <div class="flex-1 flex justify-end flex-col items-end w-full sm:w-auto mt-2 sm:mt-0">
+                    <span class="text-lg sm:text-2xl font-bold text-emerald-600 leading-none mb-1" id="measure-result-dist">ระยะรวม: 0.000 ม.</span>
+                    <span class="text-xs sm:text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: 0.000 ตร.ม.</span>
                 </div>
             </div>
             
@@ -322,50 +344,59 @@
                 <canvas id="measure-canvas" class="block mx-auto shadow-md bg-white"></canvas>
             </div>
             
-            <div class="text-xs text-slate-500 mt-3 font-bold">
-                💡 วิธีใช้: "คลิก" เพื่อลากเส้นต่อกันไปเรื่อยๆ | ถ้านำเมาส์ไปคลิกใกล้จุดแรกสุด (จุดเริ่มต้น) ระบบจะบรรจบเส้นและคำนวณ "พื้นที่" ให้อัตโนมัติ
+            <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold">
+                💡 วิธีใช้: "แตะ/คลิก" เพื่อลากเส้นต่อกันไปเรื่อยๆ | แตะที่จุดเริ่มต้นเพื่อบรรจบเส้นและคำนวณ "พื้นที่"
             </div>
         </div>
     </div>
 
     <!-- Modal: Compare Tool -->
-    <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg">
-            <h3 class="font-bold text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3>
+    <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-lg">
+            <h3 class="font-bold text-lg sm:text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3>
             <input type="file" id="compare-old" class="w-full mb-2 border p-2 text-sm">
             <input type="file" id="compare-new" class="w-full mb-4 border p-2 text-sm">
-            <button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2 rounded-xl font-bold">เริ่มเปรียบเทียบ</button>
-            <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2 rounded-xl font-bold">ยกเลิก</button>
+            <button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2.5 rounded-xl font-bold text-sm">เริ่มเปรียบเทียบ</button>
+            <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2.5 rounded-xl font-bold text-sm">ยกเลิก</button>
         </div>
     </div>
 
     <!-- Modal: Large Preview (พรีวิวดูหน้าชัดๆ) -->
-    <div id="modal-preview" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onclick="closePreviewModal(event)">
-        <div class="bg-white p-4 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col relative" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="preview-modal-title" class="font-bold text-xl text-slate-800">🔍 พรีวิวหน้าเอกสารแบบขยาย</h3>
-                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-2xl transition">✖</button>
+    <div id="modal-preview" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-2 sm:p-4" onclick="closePreviewModal(event)">
+        <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl max-w-5xl w-full h-[95vh] flex flex-col relative" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h3 id="preview-modal-title" class="font-bold text-base sm:text-xl text-slate-800">🔍 พรีวิวหน้าเอกสารแบบขยาย</h3>
+                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition">✖</button>
             </div>
-            <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-center justify-center p-4 shadow-inner relative">
-                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full"></canvas>
+            <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-start sm:items-center justify-center p-2 sm:p-4 shadow-inner relative">
+                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full m-auto"></canvas>
             </div>
-            <div class="text-xs text-slate-500 mt-3 font-bold text-center">
-                💡 สามารถใช้ลูกกลิ้งเมาส์ (Scroll) เพื่อเลื่อนดูรายละเอียดหน้าได้
+            <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold text-center">
+                💡 สามารถใช้สองนิ้วซูม หรือไถเลื่อนหน้าจอเพื่อดูรายละเอียดได้
             </div>
         </div>
     </div>
 
     <!-- Loading Overlay -->
     <div id="loading" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-2xl shadow-xl flex items-center space-x-4">
-            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span id="loading-text" class="font-bold text-slate-700 text-lg">กำลังประมวลผล...</span>
+        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl flex items-center space-x-3 sm:space-x-4">
+            <svg class="animate-spin h-6 w-6 sm:h-8 sm:w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span id="loading-text" class="font-bold text-slate-700 text-sm sm:text-lg">กำลังประมวลผล...</span>
         </div>
     </div>
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Fix Click Race Condition)
+        // เริ่มต้นใช้งาน Polyfill สำหรับรองรับ Drag & Drop บน Touch Screens
+        // =========================================================
+        MobileDragDrop.polyfill({
+            holdToDrag: 300 // กดค้าง 300ms เพื่อลาก (หากแตะธรรมดาจะถือว่าเลื่อนจอปกติ)
+        });
+        // ป้องกันพฤติกรรมเลื่อนจออัตโนมัติขณะลากเพื่อให้ลากของได้สมูท
+        window.addEventListener('touchmove', function() {}, {passive: false});
+
+        // =========================================================
+        // Core Logic (Organizer, Undo/Redo, Multi-Select Mode)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -374,6 +405,7 @@
         let draggedIndex = null;
         let undoStack = [];
         let redoStack = [];
+        let isMultiSelectMode = false; // ตัวแปรคุมการเลือกหลายหน้าสำหรับมือถือ
 
         const STANDARD_SIZES = { "Original": null, "A0": [2384, 3370], "A1": [1684, 2384], "A2": [1191, 1684], "A4": [595, 842], "A3": [842, 1191], "Letter": [612, 792] };
         const dropZone = document.getElementById('drop-zone');
@@ -381,6 +413,19 @@
         const gridContainer = document.getElementById('grid-container');
         const loadingBox = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
+
+        // Toggle โหมดเลือกหลายหน้า (มือถือ)
+        function toggleMultiSelect() {
+            isMultiSelectMode = !isMultiSelectMode;
+            const btn = document.getElementById('btn-multi-select');
+            if (isMultiSelectMode) {
+                btn.className = "bg-blue-100 hover:bg-blue-200 text-blue-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition shadow-inner border border-blue-300";
+                btn.innerHTML = "👆 โหมดเลือกหลายหน้า: เปิด";
+            } else {
+                btn.className = "bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition border border-slate-200";
+                btn.innerHTML = "👆 โหมดเลือกหลายหน้า: ปิด";
+            }
+        }
 
         // Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
@@ -421,8 +466,8 @@
         function updateUndoRedoButtons() {
             const uBtn = document.getElementById('btn-undo'); const rBtn = document.getElementById('btn-redo');
             if (uBtn && rBtn) {
-                uBtn.className = undoStack.length > 0 ? "text-blue-600 hover:text-blue-800 px-2 py-1.5 rounded-lg text-xs font-bold transition" : "text-slate-300 px-2 py-1.5 rounded-lg text-xs font-bold cursor-not-allowed";
-                rBtn.className = redoStack.length > 0 ? "text-blue-600 hover:text-blue-800 px-2 py-1.5 rounded-lg text-xs font-bold transition" : "text-slate-300 px-2 py-1.5 rounded-lg text-xs font-bold cursor-not-allowed";
+                uBtn.className = undoStack.length > 0 ? "text-blue-600 hover:text-blue-800 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition" : "text-slate-300 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold cursor-not-allowed";
+                rBtn.className = redoStack.length > 0 ? "text-blue-600 hover:text-blue-800 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition" : "text-slate-300 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold cursor-not-allowed";
             }
         }
 
@@ -453,12 +498,12 @@
                 }
                 document.getElementById('drop-content').classList.add('hidden'); document.getElementById('file-info').classList.remove('hidden');
                 document.getElementById('toolbar').classList.remove('hidden'); document.getElementById('btn-save').classList.remove('hidden');
+                document.getElementById('mobile-hint').classList.remove('hidden'); // แสดงคำแนะนำบนมือถือ
                 dropZone.classList.add('border-emerald-500', 'bg-emerald-50');
                 renderGrid(); updateUndoRedoButtons();
             } catch (err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); } finally { hideLoading(); }
         }
 
-        // ตัวแปรล็อกคิวเรนเดอร์เพื่อป้องกัน Race Condition เวลาทำงานหนักๆ
         let currentRenderId = 0;
 
         async function renderGrid() {
@@ -470,18 +515,20 @@
             
             const canvasTasks = [];
 
-            // สร้างกล่อง DOM ก่อนแบบ Synchronous เพื่อไม่ให้เสียตำแหน่ง
             for (let index = 0; index < loadedPages.length; index++) {
                 const pageData = loadedPages[index];
                 const isSelected = selectedIndices.has(index);
                 const card = document.createElement('div');
                 card.id = `card-${index}`;
-                card.className = `page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm ${isSelected ? 'selected border-blue-600 bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
+                card.className = `page-card bg-white border-2 rounded-xl p-2 sm:p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm ${isSelected ? 'selected border-blue-600 bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
                 card.draggable = true;
                 
                 card.ondragstart = (e) => { 
                     if (!selectedIndices.has(index)) { selectedIndices.clear(); selectedIndices.add(index); updateSelectionUI(); }
-                    draggedIndex = index; e.dataTransfer.setData('text/plain', index); card.classList.add('dragging'); 
+                    draggedIndex = index; 
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', index); 
+                    card.classList.add('dragging'); 
                 };
                 card.ondragend = (e) => { e.stopPropagation(); card.classList.remove('dragging'); };
                 card.ondragover = (e) => { 
@@ -520,7 +567,6 @@
                     renderGrid();
                 };
 
-                // 🛑 โค้ดสำคัญ! อัปเดตเฉพาะสีการ์ด "ห้ามดึง renderGrid() ซ้ำเด็ดขาด" เวลาคลิกหน้ากระดาษ
                 card.onclick = (e) => { 
                     if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON') {
                         handleCardClick(e, index);
@@ -529,27 +575,25 @@
                 };
 
                 const canvas = document.createElement('canvas'); 
-                canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-36 w-auto object-contain pointer-events-none mx-auto';
+                canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-24 sm:max-h-36 w-auto object-contain pointer-events-none mx-auto';
                 card.appendChild(canvas);
                 
                 const ctrlBar = document.createElement('div'); 
-                ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500 gap-1';
+                ctrlBar.className = 'w-full flex justify-between items-center mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t text-[10px] sm:text-xs font-bold text-slate-500 gap-1';
                 
                 const pageLabel = document.createElement('span');
                 pageLabel.textContent = `P.${index + 1}`;
                 
-                // --- เพิ่มปุ่มพรีวิว (แว่นขยาย) ตรงนี้ ---
                 const previewBtn = document.createElement('button');
                 previewBtn.innerHTML = '🔍';
-                previewBtn.className = 'hover:bg-blue-100 hover:scale-110 p-1.5 rounded-lg transition text-blue-600 bg-slate-50 border border-slate-200 shadow-sm';
+                previewBtn.className = 'hover:bg-blue-100 hover:scale-110 p-1 sm:p-1.5 rounded-lg transition text-blue-600 bg-slate-50 border border-slate-200 shadow-sm text-[10px] sm:text-xs leading-none';
                 previewBtn.title = 'พรีวิวภาพขยาย';
                 previewBtn.onclick = (e) => {
-                    e.stopPropagation(); // หยุดอีเวนต์ไม่ให้ไปคลิกเลือกกระดาษ (Select Card)
+                    e.stopPropagation(); 
                     openPreviewModal(index);
                 };
                 
-                // นำปุ่ม Dropdown ปรับไซส์แต่ละหน้ากลับมาตามที่ต้องการ
-                const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-1 text-xs bg-slate-50 font-semibold cursor-pointer ml-auto';
+                const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-0.5 sm:p-1 text-[9px] sm:text-xs bg-slate-50 font-semibold cursor-pointer ml-auto outline-none';
                 Object.keys(STANDARD_SIZES).forEach(s => {
                     const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
                     if (pageData.sizeKey === s) opt.selected = true; sizeSelect.appendChild(opt);
@@ -562,23 +606,19 @@
                 card.appendChild(ctrlBar); 
                 gridContainer.appendChild(card);
 
-                // ดันงานวาด Canvas ลงคิวเพื่อไม่ให้กวนการลากวาง (Anti-Race Condition)
                 canvasTasks.push({ pageData, canvas });
             }
 
-            // สั่งทำงานวาด Canvas แบบเบื้องหลัง (Background Rendering)
             for (let task of canvasTasks) {
-                if (currentRenderId !== myRenderId) return; // หากคิวถูกสั่งยกเลิกให้หยุดทำงานทันที
+                if (currentRenderId !== myRenderId) return; 
                 try {
                     const page = await task.pageData.pdfDocJs.getPage(task.pageData.pageNumber);
                     if (currentRenderId !== myRenderId) return; 
 
-                    // คำนวณองศารวม (ค่าตั้งต้น + ค่าที่หมุน)
                     const totalRot = (task.pageData.initialRotation + task.pageData.rotation) % 360;
                     const viewport = page.getViewport({ scale: 0.25, rotation: totalRot });
                     
                     if (task.pageData.sizeKey && task.pageData.sizeKey !== "Original" && STANDARD_SIZES[task.pageData.sizeKey]) {
-                        // ปรับขนาดหน้าพรีวิวให้ตรงกับกระดาษที่เลือก (จำลองสัดส่วนจริง)
                         let [ptW, ptH] = STANDARD_SIZES[task.pageData.sizeKey];
                         if ((viewport.width > viewport.height && ptW < ptH) || (viewport.width < viewport.height && ptW > ptH)) {
                             const temp = ptW; ptW = ptH; ptH = temp;
@@ -606,22 +646,23 @@
             if (event.shiftKey && lastClickedIndex !== null) {
                 const start = Math.min(lastClickedIndex, index), end = Math.max(lastClickedIndex, index);
                 for (let i = start; i <= end; i++) selectedIndices.add(i);
-            } else if (event.ctrlKey || event.metaKey) {
-                selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); lastClickedIndex = index;
+            } else if (event.ctrlKey || event.metaKey || isMultiSelectMode) {
+                // รองรับโหมด Multi-Select บนมือถือ
+                selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); 
+                lastClickedIndex = index;
             } else { 
                 selectedIndices.clear(); selectedIndices.add(index); lastClickedIndex = index; 
             }
         }
 
-        // ⚡ อัปเดตเฉพาะสีการ์ด ไม่โหลดล้าง Canvas ป้องกันอาการหน้าสลับมั่ว
         function updateSelectionUI() {
             for (let i = 0; i < loadedPages.length; i++) {
                 const card = document.getElementById(`card-${i}`);
                 if (card) {
                     if (selectedIndices.has(i)) {
-                        card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
+                        card.className = "page-card bg-white border-2 rounded-xl p-2 sm:p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
                     } else {
-                        card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
+                        card.className = "page-card bg-white border-2 rounded-xl p-2 sm:p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
                     }
                 }
             }
@@ -634,20 +675,10 @@
         }
 
         function rotateSelected(deg) { 
-            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); 
+            if (selectedIndices.size === 0) return alert("กรุณาเลือกหน้าที่จะหมุนก่อนครับ"); 
             saveState(); 
             selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); 
             renderGrid(); 
-        }
-
-        function resizeSelectedPages() {
-            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน");
-            const size = prompt("พิมพ์ขนาดกระดาษที่ต้องการ (เช่น A4, A3, Letter, A0)\nหรือพิมพ์ Original เพื่อคืนค่าเริ่มต้น:", "A4");
-            if (!size) return;
-            const keys = Object.keys(STANDARD_SIZES);
-            const match = keys.find(k => k.toLowerCase() === size.toLowerCase());
-            if (!match) return alert("ไม่รู้จักขนาดกระดาษนี้ ลองตรวจสอบตัวสะกดอีกครั้งครับ");
-            saveState(); selectedIndices.forEach(idx => loadedPages[idx].sizeKey = match); renderGrid();
         }
 
         function deleteSelected() { 
@@ -663,16 +694,11 @@
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            const origSize = copiedPage.getSize(); // ดึงความกว้างยาว (อิงตาม Rotate แล้ว)
-            
-            // นำมุมตั้งต้นของไฟล์ (sourceRot) มารวมกับมุมที่ผู้ใช้สั่งหมุน (pd.rotation)
+            const origSize = copiedPage.getSize(); 
             const sourceRot = copiedPage.getRotation().angle;
             const finalRot = (sourceRot + (pd.rotation || 0)) % 360;
-            
-            // บังคับค่าองศาการหมุนลงใน PDF อย่างเด็ดขาดให้ตรงหน้าจอ Preview
             copiedPage.setRotation(PDFLib.degrees(finalRot));
 
-            // หาความกว้าง/ความสูงจริงแบบเนื้อหาแท้ๆ (Unrotated Box)
             let unrotatedW = origSize.width;
             let unrotatedH = origSize.height;
             if (sourceRot === 90 || sourceRot === 270) {
@@ -701,7 +727,6 @@
                     const tx = (targetW - scaledVisualW) / 2;
                     const ty = (targetH - scaledVisualH) / 2;
 
-                    // การแก้ปัญหาหมุนตอนเปลี่ยนขนาดกระดาษ
                     let drawX = tx, drawY = ty, drawAngle = 0;
                     if (finalRot === 90) { drawX = tx; drawY = ty + scaledVisualH; drawAngle = -90; } 
                     else if (finalRot === 180) { drawX = tx + scaledVisualW; drawY = ty + scaledVisualH; drawAngle = -180; } 
@@ -720,21 +745,15 @@
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                // ขนาดจาก getSize() จะอิงตาม finalRot ทำให้ขนาดภาพและองศาตรงหน้า Preview อัตโนมัติ
                 return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: copiedPage.getSize().width, vH: copiedPage.getSize().height } };
             }
         }
 
-        // สมการ Matrix สำหรับหาพิกัดตรายางชดเชยการหมุนให้ตรงเป๊ะทุกสเกล
         function mapVisualToUnrotated(vx, vy, meta) {
-            if (meta.baked) {
-                // หากผ่านการ Resize ไปแล้ว กระดาษจะเป็น Rotate 0 หน้าตรงเสมอ ให้ใช้พิกัดตามหน้าจอได้เลย
-                return { x: vx, y: vy, angleDeg: 0 };
-            }
+            if (meta.baked) return { x: vx, y: vy, angleDeg: 0 };
             const r = ((meta.rotation % 360) + 360) % 360;
             const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
             const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-
             let ox, oy;
             if (r === 0) { ox = vx; oy = vy; }
             else if (r === 90) { ox = uW - vy; oy = vx; }
@@ -854,10 +873,10 @@
             signMode = mode;
             ['stamp', 'text', 'image'].forEach(m => {
                 document.getElementById(`input-${m}`).classList.add('hidden');
-                document.getElementById(`tab-${m}`).className = 'flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700';
+                document.getElementById(`tab-${m}`).className = 'flex-1 py-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-700';
             });
             document.getElementById(`input-${mode}`).classList.remove('hidden');
-            document.getElementById(`tab-${mode}`).className = 'flex-1 py-1.5 text-sm font-bold bg-white shadow-sm rounded-md text-blue-600';
+            document.getElementById(`tab-${mode}`).className = 'flex-1 py-1.5 text-xs sm:text-sm font-bold bg-white shadow-sm rounded-md text-blue-600';
             updateTargetAppearance();
         }
 
@@ -902,6 +921,16 @@
             signRelY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)); 
             updateTargetPos();
         });
+        // รองรับการแตะเพื่อวางตรายางบนมือถือ
+        previewCanvas.addEventListener('touchstart', (e) => {
+            if(e.touches.length > 0) {
+                const rect = previewCanvas.getBoundingClientRect(); 
+                signRelX = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width)); 
+                signRelY = Math.max(0, Math.min(1, (e.touches[0].clientY - rect.top) / rect.height)); 
+                updateTargetPos();
+            }
+        }, {passive: true});
+
         function updateTargetPos() {
             const targetBox = document.getElementById('sign-target'); targetBox.style.left = `${signRelX * 100}%`; targetBox.style.top = `${signRelY * 100}%`;
         }
@@ -1180,7 +1209,7 @@
         }
 
         // =========================================================
-        // 📏 Measure Tool Logic (อัปเดต: วัดต่อเนื่อง + พื้นที่ + เลือกหน้า)
+        // 📏 Measure Tool Logic
         // =========================================================
         let measurePdfDocJs = null; 
         let measureScale = 1.5; 
@@ -1200,7 +1229,6 @@
             measurePdfDocJs = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
             if (!measurePdfDocJs) return;
             
-            // วนลูปสร้างตัวเลือกหน้ากระดาษ
             const pageSelect = document.getElementById('measure-page');
             pageSelect.innerHTML = '';
             for(let i=1; i<=measurePdfDocJs.numPages; i++) {
@@ -1244,7 +1272,6 @@
             updateMeasureResult();
         }
 
-        // แปลงพิกเซล (px) บนจอกลับเป็นเมตร (m.) ตามสเกลผู้ใช้
         function pxToRealMeters(px) {
             const pdf_pts = px / measureScale; 
             const mm_on_paper = (pdf_pts / 72.0) * 25.4;
@@ -1259,7 +1286,6 @@
                 return;
             }
 
-            // คำนวณระยะทางรวมทั้งหมด
             let totalPxDist = 0;
             for (let i = 1; i < measurePoints.length; i++) {
                 totalPxDist += Math.hypot(measurePoints[i].x - measurePoints[i-1].x, measurePoints[i].y - measurePoints[i-1].y);
@@ -1271,7 +1297,6 @@
             const realDistMeters = pxToRealMeters(totalPxDist);
             document.getElementById('measure-result-dist').textContent = `ระยะรวม: ${realDistMeters.toFixed(3)} ม.`;
 
-            // คำนวณพื้นที่ (Shoelace Formula) หากมีการปิดเส้น
             if (isMeasureClosed && measurePoints.length > 2) {
                 let areaPx = 0;
                 let pts = [...measurePoints, measurePoints[0]]; 
@@ -1288,16 +1313,21 @@
             }
         }
 
-        mCanvas.addEventListener('click', (e) => {
+        function handleMeasurePointerEvent(e) {
             if (!mImgData || isMeasureClosed) return;
             const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
-            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            // รองรับทั้ง Mouse และ Touch
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
             
-            // ตรวจจับการคลิกบรรจบจุดเริ่มต้น (Snap)
+            if(!clientX || !clientY) return;
+
+            const x = (clientX - rect.left) * (mCanvas.width / rect.width); 
+            const y = (clientY - rect.top) * (mCanvas.height / rect.height);
+            
             if (measurePoints.length > 2) {
                 const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
-                if (distToFirst < 15) { // ระยะแม่เหล็กดูด 15 px
+                if (distToFirst < 15) { 
                     isMeasureClosed = true;
                     redrawMeasure(x, y); 
                     updateMeasureResult();
@@ -1308,7 +1338,14 @@
             measurePoints.push({x, y});
             redrawMeasure(x, y);
             updateMeasureResult();
-        });
+        }
+
+        mCanvas.addEventListener('click', handleMeasurePointerEvent);
+        // สำหรับ Touch บนมือถืออาจมี Delay ดังนั้นใช้ touchstart ช่วยสำหรับวาด
+        mCanvas.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); // ป้องกันการเกิด Click ซ้ำ
+            handleMeasurePointerEvent(e); 
+        }, {passive: false});
 
         mCanvas.addEventListener('mousemove', (e) => {
             if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
@@ -1335,7 +1372,6 @@
             mCtx.putImageData(mImgData, 0, 0);
             if (measurePoints.length === 0) return;
 
-            // ถมสีพื้นที่ (หากปิดเส้นสำเร็จ)
             if (isMeasureClosed && measurePoints.length > 2) {
                 mCtx.beginPath();
                 mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
@@ -1347,7 +1383,6 @@
                 mCtx.fill();
             }
 
-            // วาดเส้นแบบ Polyline
             mCtx.beginPath();
             mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
             for(let i=1; i<measurePoints.length; i++) {
@@ -1357,7 +1392,6 @@
             if (isMeasureClosed) {
                 mCtx.closePath();
             } else if (mouseX !== undefined && mouseY !== undefined) {
-                // วาดเส้นร่างก่อนคลิกจริง (Preview line)
                 mCtx.lineTo(mouseX, mouseY);
             }
             
@@ -1367,7 +1401,6 @@
             mCtx.lineCap = "round";
             mCtx.stroke();
 
-            // วาดจุดเชื่อมต่อ (Vertex)
             mCtx.fillStyle = "#3B82F6"; 
             for(let pt of measurePoints) {
                 mCtx.beginPath();
@@ -1375,7 +1408,6 @@
                 mCtx.fill();
             }
             
-            // วงกลมแจ้งเตือน (Snap Guide) หากเมาส์อยู่ใกล้จุดเริ่มต้น
             if (!isMeasureClosed && measurePoints.length > 2 && mouseX !== undefined) {
                  const distToFirst = Math.hypot(mouseX - measurePoints[0].x, mouseY - measurePoints[0].y);
                  if (distToFirst < 15 || (mouseX === measurePoints[0].x && mouseY === measurePoints[0].y)) {
@@ -1404,10 +1436,8 @@
                 const pd = loadedPages[index];
                 const page = await pd.pdfDocJs.getPage(pd.pageNumber);
                 
-                // คำนวณองศาเผื่อผู้ใช้กดหมุนเอาไว้
                 const totalRot = (pd.initialRotation + pd.rotation) % 360;
                 
-                // ใช้ Scale สูง (1.5) เพื่อให้ภาพชัดเวลาขยายดู
                 const viewport = page.getViewport({ scale: 1.5, rotation: totalRot });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
@@ -1426,7 +1456,6 @@
         }
 
         function closePreviewModal(e) {
-            // ปิดเมื่อกดปุ่มกากบาท (e เป็น undefined) หรือคลิกพื้นที่สีดำรอบข้าง (e.target.id ตรงกับกล่องนอก)
             if (!e || e.target.id === 'modal-preview') {
                 document.getElementById('modal-preview').classList.add('hidden');
             }
