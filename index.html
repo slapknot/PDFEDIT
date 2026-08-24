@@ -288,16 +288,55 @@
         </div>
     </div>
 
-    <!-- Modals (Measure & Compare) -->
+    <!-- Modal: Measure Tool (อัปเดตใหม่) -->
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
-            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง</h3><button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button></div>
-            <div class="flex space-x-4 mb-4"><input type="file" id="measure-file" class="border p-1 text-sm rounded w-1/3"><input type="number" id="measure-scale" value="100" class="border p-1 text-sm rounded w-20"><span class="text-2xl font-bold text-emerald-600 ml-auto" id="measure-result">0.000 ม.</span></div>
-            <div class="flex-1 bg-slate-200 rounded overflow-auto relative cursor-crosshair border"><canvas id="measure-canvas" class="block mx-auto"></canvas></div>
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง & พื้นที่ (ต่อเนื่อง)</h3>
+                <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button>
+            </div>
+            
+            <!-- เครื่องมือควบคุมด้านบน -->
+            <div class="flex flex-wrap space-x-3 mb-4 items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <input type="file" id="measure-file" class="border p-2 text-sm rounded w-64 bg-white" accept="application/pdf">
+                
+                <!-- กล่องเลือกหน้า (จะแสดงเมื่อไฟล์มีหลายหน้า) -->
+                <select id="measure-page" class="border p-2 text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none" onchange="changeMeasurePage()">
+                </select>
+                
+                <div class="h-6 border-l border-slate-300 mx-1"></div>
+                
+                <label class="text-sm font-bold text-slate-700">สเกลแบบ 1:</label>
+                <input type="number" id="measure-scale" value="100" class="border p-2 text-sm rounded w-20 font-bold bg-white outline-none" onchange="updateMeasureResult()">
+                
+                <button onclick="clearMeasure()" class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-bold transition ml-2 shadow-sm">🗑 ล้างเส้น</button>
+                
+                <div class="flex-1 flex justify-end flex-col items-end">
+                    <span class="text-2xl font-bold text-emerald-600 leading-none mb-1" id="measure-result-dist">ระยะรวม: 0.000 ม.</span>
+                    <span class="text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: 0.000 ตร.ม.</span>
+                </div>
+            </div>
+            
+            <!-- กระดานวาด -->
+            <div class="flex-1 bg-slate-300 rounded-lg overflow-auto relative cursor-crosshair border-2 border-slate-300 shadow-inner">
+                <canvas id="measure-canvas" class="block mx-auto shadow-md bg-white"></canvas>
+            </div>
+            
+            <div class="text-xs text-slate-500 mt-3 font-bold">
+                💡 วิธีใช้: "คลิก" เพื่อลากเส้นต่อกันไปเรื่อยๆ | ถ้านำเมาส์ไปคลิกใกล้จุดแรกสุด (จุดเริ่มต้น) ระบบจะบรรจบเส้นและคำนวณ "พื้นที่" ให้อัตโนมัติ
+            </div>
         </div>
     </div>
+
+    <!-- Modal: Compare Tool -->
     <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg"><h3 class="font-bold text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3><input type="file" id="compare-old" class="w-full mb-2 border p-2 text-sm"><input type="file" id="compare-new" class="w-full mb-4 border p-2 text-sm"><button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2 rounded-xl font-bold">เริ่มเปรียบเทียบ</button><button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2 rounded-xl font-bold">ยกเลิก</button></div>
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg">
+            <h3 class="font-bold text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3>
+            <input type="file" id="compare-old" class="w-full mb-2 border p-2 text-sm">
+            <input type="file" id="compare-new" class="w-full mb-4 border p-2 text-sm">
+            <button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2 rounded-xl font-bold">เริ่มเปรียบเทียบ</button>
+            <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2 rounded-xl font-bold">ยกเลิก</button>
+        </div>
     </div>
 
     <!-- Loading Overlay -->
@@ -966,7 +1005,7 @@
         }
 
         // =========================================================
-        // Other Tools (Redact, Highlight, Excel, Compare, Measure)
+        // Other Tools (Redact, Highlight, Excel, Compare)
         // =========================================================
         function mapUnrotatedToVisual(ox, oy, meta) {
             if (meta.baked) return { x: ox, y: oy, angleDeg: 0 }; 
@@ -1069,7 +1108,6 @@
         }
 
         function toolProtect() { alert("ฟังก์ชันเข้ารหัสล็อกพาสเวิร์ด (Protect) แนะนำให้ใช้ผ่าน Desktop Version (Python) ครับ"); }
-        function openMeasureModal() { document.getElementById('modal-measure').classList.remove('hidden'); }
         function openCompareModal() { document.getElementById('modal-compare').classList.remove('hidden'); }
         
         async function executeCompare() {
@@ -1110,33 +1148,214 @@
             } catch(e) { console.error(e); } finally { hideLoading(); }
         }
 
-        // Measure tool logic
-        let measurePdfDocJs = null; let measureScale = 1.0; let isDrawing = false; let mStartX = 0, mStartY = 0;
-        let mCanvas = document.getElementById('measure-canvas'); let mCtx = mCanvas.getContext('2d'); let mImgData = null;
+        // =========================================================
+        // 📏 Measure Tool Logic (อัปเดต: วัดต่อเนื่อง + พื้นที่ + เลือกหน้า)
+        // =========================================================
+        let measurePdfDocJs = null; 
+        let measureScale = 1.5; 
+        let measurePoints = []; 
+        let isMeasureClosed = false;
+        let mCanvas = document.getElementById('measure-canvas'); 
+        let mCtx = mCanvas.getContext('2d'); 
+        let mImgData = null;
+        let currentMeasurePageNum = 1;
+
+        function openMeasureModal() { 
+            document.getElementById('modal-measure').classList.remove('hidden'); 
+        }
+
         document.getElementById('measure-file').addEventListener('change', async (e) => {
             const file = e.target.files[0]; if (!file) return;
             measurePdfDocJs = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
             if (!measurePdfDocJs) return;
-            const page = await measurePdfDocJs.getPage(1); const viewport = page.getViewport({ scale: 1.5 });
-            measureScale = 1.5; mCanvas.width = viewport.width; mCanvas.height = viewport.height;
-            await page.render({ canvasContext: mCtx, viewport: viewport }).promise; mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
+            
+            // วนลูปสร้างตัวเลือกหน้ากระดาษ
+            const pageSelect = document.getElementById('measure-page');
+            pageSelect.innerHTML = '';
+            for(let i=1; i<=measurePdfDocJs.numPages; i++) {
+                const opt = document.createElement('option');
+                opt.value = i; opt.textContent = `แผ่นที่ ${i}`;
+                pageSelect.appendChild(opt);
+            }
+            if (measurePdfDocJs.numPages > 1) {
+                pageSelect.classList.remove('hidden');
+            } else {
+                pageSelect.classList.add('hidden');
+            }
+            
+            currentMeasurePageNum = 1;
+            await renderMeasurePage(currentMeasurePageNum);
         });
-        mCanvas.addEventListener('mousedown', (e) => {
-            if (!mImgData) return; isDrawing = true; const rect = mCanvas.getBoundingClientRect();
-            mStartX = (e.clientX - rect.left) * (mCanvas.width / rect.width); mStartY = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+
+        async function changeMeasurePage() {
+            const page = parseInt(document.getElementById('measure-page').value);
+            if (page && page !== currentMeasurePageNum) {
+                currentMeasurePageNum = page;
+                showLoading("กำลังโหลดหน้า...");
+                await renderMeasurePage(page);
+                hideLoading();
+            }
+        }
+
+        async function renderMeasurePage(pageNum) {
+            clearMeasure();
+            const page = await measurePdfDocJs.getPage(pageNum);
+            const viewport = page.getViewport({ scale: measureScale });
+            mCanvas.width = viewport.width; mCanvas.height = viewport.height;
+            await page.render({ canvasContext: mCtx, viewport: viewport }).promise;
+            mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
+        }
+
+        function clearMeasure() {
+            measurePoints = [];
+            isMeasureClosed = false;
+            if(mImgData) mCtx.putImageData(mImgData, 0, 0);
+            updateMeasureResult();
+        }
+
+        // แปลงพิกเซล (px) บนจอกลับเป็นเมตร (m.) ตามสเกลผู้ใช้
+        function pxToRealMeters(px) {
+            const pdf_pts = px / measureScale; 
+            const mm_on_paper = (pdf_pts / 72.0) * 25.4;
+            const userScale = parseFloat(document.getElementById('measure-scale').value) || 100; 
+            return (mm_on_paper * userScale) / 1000.0;
+        }
+
+        function updateMeasureResult() {
+            if (measurePoints.length === 0) {
+                document.getElementById('measure-result-dist').textContent = `ระยะรวม: 0.000 ม.`;
+                document.getElementById('measure-result-area').textContent = `พื้นที่: 0.000 ตร.ม.`;
+                return;
+            }
+
+            // คำนวณระยะทางรวมทั้งหมด
+            let totalPxDist = 0;
+            for (let i = 1; i < measurePoints.length; i++) {
+                totalPxDist += Math.hypot(measurePoints[i].x - measurePoints[i-1].x, measurePoints[i].y - measurePoints[i-1].y);
+            }
+            if (isMeasureClosed && measurePoints.length > 2) {
+                totalPxDist += Math.hypot(measurePoints[0].x - measurePoints[measurePoints.length-1].x, measurePoints[0].y - measurePoints[measurePoints.length-1].y);
+            }
+            
+            const realDistMeters = pxToRealMeters(totalPxDist);
+            document.getElementById('measure-result-dist').textContent = `ระยะรวม: ${realDistMeters.toFixed(3)} ม.`;
+
+            // คำนวณพื้นที่ (Shoelace Formula) หากมีการปิดเส้น
+            if (isMeasureClosed && measurePoints.length > 2) {
+                let areaPx = 0;
+                let pts = [...measurePoints, measurePoints[0]]; 
+                for (let i = 0; i < pts.length - 1; i++) {
+                    areaPx += (pts[i].x * pts[i+1].y - pts[i+1].x * pts[i].y);
+                }
+                areaPx = Math.abs(areaPx / 2.0);
+                
+                const conversionFactor = pxToRealMeters(1);
+                const realArea = areaPx * (conversionFactor * conversionFactor);
+                document.getElementById('measure-result-area').textContent = `พื้นที่: ${realArea.toFixed(3)} ตร.ม.`;
+            } else {
+                document.getElementById('measure-result-area').textContent = `พื้นที่: -`;
+            }
+        }
+
+        mCanvas.addEventListener('click', (e) => {
+            if (!mImgData || isMeasureClosed) return;
+            const rect = mCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
+            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            // ตรวจจับการคลิกบรรจบจุดเริ่มต้น (Snap)
+            if (measurePoints.length > 2) {
+                const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
+                if (distToFirst < 15) { // ระยะแม่เหล็กดูด 15 px
+                    isMeasureClosed = true;
+                    redrawMeasure(x, y); 
+                    updateMeasureResult();
+                    return;
+                }
+            }
+            
+            measurePoints.push({x, y});
+            redrawMeasure(x, y);
+            updateMeasureResult();
         });
+
         mCanvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return; mCtx.putImageData(mImgData, 0, 0); const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
-            mCtx.beginPath(); mCtx.moveTo(mStartX, mStartY); mCtx.lineTo(x, y); mCtx.strokeStyle = "red"; mCtx.lineWidth = 3; mCtx.stroke();
+            if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
+            const rect = mCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
+            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            let snapX = x, snapY = y;
+            if (measurePoints.length > 2) {
+                const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
+                if (distToFirst < 15) {
+                    snapX = measurePoints[0].x;
+                    snapY = measurePoints[0].y;
+                    mCanvas.style.cursor = 'pointer';
+                } else {
+                    mCanvas.style.cursor = 'crosshair';
+                }
+            }
+            redrawMeasure(snapX, snapY);
         });
-        mCanvas.addEventListener('mouseup', (e) => {
-            if (!isDrawing) return; isDrawing = false; const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
-            const px_dist = Math.hypot(x - mStartX, y - mStartY); const pdf_pts = px_dist / measureScale; const mm_on_paper = (pdf_pts / 72.0) * 25.4;
-            const userScale = parseFloat(document.getElementById('measure-scale').value) || 100; const real_m = (mm_on_paper * userScale) / 1000.0;
-            document.getElementById('measure-result').textContent = `ระยะทาง: ${real_m.toFixed(3)} ม.`;
-        });
+
+        function redrawMeasure(mouseX, mouseY) {
+            if(!mImgData) return;
+            mCtx.putImageData(mImgData, 0, 0);
+            if (measurePoints.length === 0) return;
+
+            // ถมสีพื้นที่ (หากปิดเส้นสำเร็จ)
+            if (isMeasureClosed && measurePoints.length > 2) {
+                mCtx.beginPath();
+                mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
+                for(let i=1; i<measurePoints.length; i++) {
+                    mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
+                }
+                mCtx.closePath();
+                mCtx.fillStyle = "rgba(16, 185, 129, 0.25)"; 
+                mCtx.fill();
+            }
+
+            // วาดเส้นแบบ Polyline
+            mCtx.beginPath();
+            mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
+            for(let i=1; i<measurePoints.length; i++) {
+                mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
+            }
+            
+            if (isMeasureClosed) {
+                mCtx.closePath();
+            } else if (mouseX !== undefined && mouseY !== undefined) {
+                // วาดเส้นร่างก่อนคลิกจริง (Preview line)
+                mCtx.lineTo(mouseX, mouseY);
+            }
+            
+            mCtx.strokeStyle = "#EF4444"; 
+            mCtx.lineWidth = 3;
+            mCtx.lineJoin = "round";
+            mCtx.lineCap = "round";
+            mCtx.stroke();
+
+            // วาดจุดเชื่อมต่อ (Vertex)
+            mCtx.fillStyle = "#3B82F6"; 
+            for(let pt of measurePoints) {
+                mCtx.beginPath();
+                mCtx.arc(pt.x, pt.y, 4, 0, 2*Math.PI);
+                mCtx.fill();
+            }
+            
+            // วงกลมแจ้งเตือน (Snap Guide) หากเมาส์อยู่ใกล้จุดเริ่มต้น
+            if (!isMeasureClosed && measurePoints.length > 2 && mouseX !== undefined) {
+                 const distToFirst = Math.hypot(mouseX - measurePoints[0].x, mouseY - measurePoints[0].y);
+                 if (distToFirst < 15 || (mouseX === measurePoints[0].x && mouseY === measurePoints[0].y)) {
+                    mCtx.beginPath();
+                    mCtx.arc(measurePoints[0].x, measurePoints[0].y, 9, 0, 2*Math.PI);
+                    mCtx.strokeStyle = "#10B981"; 
+                    mCtx.lineWidth = 2;
+                    mCtx.stroke();
+                 }
+            }
+        }
 
         // Utilities
         function showLoading(msg) { loadingText.textContent = msg; loadingBox.classList.remove('hidden'); }
