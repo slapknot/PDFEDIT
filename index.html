@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ ไม่มีหน้าซ้ำ ปรับสเกลเนื้อหาอัตโนมัติ</p>
+                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ ไม่มีหน้าซ้ำ ปรับสเกลเนื้อหาตรงกับพรีวิว</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -310,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Auto Content Scaling)
+        // Core Logic (Organizer, Undo/Redo & Exact Export Sync)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -479,22 +479,21 @@
         function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
         // =========================================================
-        // 🚀 Helper: Append Processed Page (Auto Content Scale & Exact Match)
+        // 🚀 Helper: Perfect Append Processed Page (Exact Preview Sync)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            let currentRot = copiedPage.getRotation().angle;
             
-            if (pd.rotation && pd.rotation !== 0) {
-                currentRot = (currentRot + pd.rotation) % 360;
-                copiedPage.setRotation(PDFLib.degrees(currentRot));
-            }
+            // Set exact absolute rotation
+            copiedPage.setRotation(PDFLib.degrees(pd.rotation || 0));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
                     const embeddedPage = await newPdf.embedPage(copiedPage);
                     let [targetW, targetH] = STANDARD_SIZES[pd.sizeKey];
-                    const eW = embeddedPage.width; const eH = embeddedPage.height;
+                    
+                    const eW = embeddedPage.width;
+                    const eH = embeddedPage.height;
                     
                     if ((eW > eH && targetW < targetH) || (eW < eH && targetW > targetH)) {
                         const temp = targetW; targetW = targetH; targetH = temp;
@@ -502,8 +501,11 @@
                     
                     const newPage = newPdf.addPage([targetW, targetH]);
                     const scaleFactor = Math.min(targetW / eW, targetH / eH);
-                    const drawW = eW * scaleFactor; const drawH = eH * scaleFactor;
-                    const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
+                    
+                    const drawW = eW * scaleFactor;
+                    const drawH = eH * scaleFactor;
+                    const tx = (targetW - drawW) / 2;
+                    const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
                     return newPage;
@@ -601,7 +603,7 @@
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool - Preview Matches Export 100%)
+        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool - Exact Coordinate Sync)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5; let signMode = 'stamp';
         let previewCanvas = document.getElementById('sign-preview-canvas');
@@ -674,7 +676,6 @@
             const targetBox = document.getElementById('sign-target'); targetBox.style.left = `${signRelX * 100}%`; targetBox.style.top = `${signRelY * 100}%`;
         }
 
-        // 🔗 Sync Preview CSS to match PDF Point Coordinates Exactly
         function updateTargetAppearance() {
             const target = document.getElementById('sign-target'); 
             const scaleVal = parseFloat(document.getElementById('sign-scale').value) / 100.0;
