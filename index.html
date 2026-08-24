@@ -9,6 +9,8 @@
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- JSZip for Multiple File Downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- SheetJS for Excel Extraction -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script>
@@ -57,7 +59,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากการ์ดเพื่อสลับตำแหน่ง หรือเลือกเครื่องมือวิศวกรด้านล่าง</p>
+                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ (Multi-drag) หรือเลือกเครื่องมือวิศวกรด้านล่าง</p>
                 </div>
                 <div class="flex space-x-2">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -134,11 +136,11 @@
                 </button>
                 <button onclick="executeSplit('all')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
                     <span class="block text-base mb-1">แยก "ทุกหน้า" ออกเป็นไฟล์ละ 1 หน้า</span>
-                    <span class="text-xs text-slate-400 font-normal">ระบบจะดาวน์โหลดออกมาให้ทุกแผ่น</span>
+                    <span class="text-xs text-slate-400 font-normal">ระบบจะแพ็กรวมใส่ไฟล์ .zip มาให้ดาวน์โหลดทีเดียว</span>
                 </button>
                 <button onclick="executeSplit('range')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
                     <span class="block text-base mb-1">แยก "ตามช่วงหน้า" (Range)</span>
-                    <span class="text-xs text-slate-400 font-normal">แบ่งเป็นชุดๆ เช่น พิมพ์ 1-3; 5-7 จะได้ 2 ไฟล์</span>
+                    <span class="text-xs text-slate-400 font-normal">แบ่งเป็นชุดๆ เช่น พิมพ์ 1-3; 5-7 จะแพ็กเป็นไฟล์ .zip</span>
                 </button>
             </div>
             <button onclick="document.getElementById('modal-split').classList.add('hidden')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl text-sm font-bold transition">ยกเลิก</button>
@@ -219,11 +221,9 @@
                     <div class="relative inline-block shadow-md bg-white">
                         <canvas id="sign-preview-canvas" class="block max-h-[50vh] object-contain cursor-crosshair"></canvas>
                         
-                        <!-- 🎯 เป้าหมายที่จะเปลี่ยนหน้าตาตามโหมดที่เลือก (ภาพ/ข้อความ/ตรายาง) -->
+                        <!-- 🎯 เป้าหมายที่จะเปลี่ยนหน้าตาตามโหมดที่เลือก -->
                         <div id="sign-target" class="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center whitespace-nowrap transition-none" style="top: 80%; left: 80%;">
-                            <!-- Content injected via JS -->
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -234,41 +234,15 @@
     <!-- Modal: Measurement Tool -->
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง (Measurement Tool)</h3>
-                <button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button>
-            </div>
-            <div class="flex space-x-4 mb-4">
-                <input type="file" id="measure-file" accept="application/pdf" class="text-sm border p-1.5 rounded-lg w-1/3">
-                <div class="flex items-center space-x-2">
-                    <label class="text-sm font-bold">สเกล 1:</label>
-                    <input type="number" id="measure-scale" value="100" class="border rounded-lg p-1.5 w-20 text-center text-sm">
-                </div>
-                <div class="flex-1 text-right">
-                    <span class="text-2xl font-bold text-emerald-600" id="measure-result">ระยะทาง: 0.000 ม.</span>
-                </div>
-            </div>
-            <div class="flex-1 bg-slate-200 rounded-xl overflow-auto relative cursor-crosshair border" id="measure-container">
-                <canvas id="measure-canvas" class="block mx-auto"></canvas>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 text-center">💡 โหลดไฟล์ Drawing แล้วใช้เมาส์คลิกลากบนหน้ากระดาษเพื่อวัดระยะทาง</p>
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง</h3><button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 font-bold hover:text-red-500">✖</button></div>
+            <div class="flex space-x-4 mb-4"><input type="file" id="measure-file" class="border p-1 text-sm rounded w-1/3"><input type="number" id="measure-scale" value="100" class="border p-1 text-sm rounded w-20"><span class="text-2xl font-bold text-emerald-600 ml-auto" id="measure-result">0.000 ม.</span></div>
+            <div class="flex-1 bg-slate-200 rounded overflow-auto relative cursor-crosshair border"><canvas id="measure-canvas" class="block mx-auto"></canvas></div>
         </div>
     </div>
-
+    
     <!-- Modal: Compare Tool -->
     <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg">
-            <h3 class="font-bold text-xl text-slate-800 mb-4">🗺️ เปรียบเทียบแบบ (Drawing Compare)</h3>
-            <p class="text-sm text-slate-500 mb-4">อัปโหลดไฟล์เก่าและใหม่ ระบบจะแสดงส่วนที่ถูกลบเป็น <span class="text-red-500 font-bold">สีแดง</span> และส่วนที่เพิ่มมาเป็น <span class="text-blue-500 font-bold">สีน้ำเงิน</span></p>
-            <div class="space-y-4">
-                <div><label class="block text-xs font-bold text-slate-700 mb-1">1. ไฟล์แบบเก่า (Old Rev - แดง):</label><input type="file" id="compare-old" accept="application/pdf" class="w-full text-sm border p-2 rounded-lg bg-slate-50"></div>
-                <div><label class="block text-xs font-bold text-slate-700 mb-1">2. ไฟล์แบบใหม่ (New Rev - น้ำเงิน):</label><input type="file" id="compare-new" accept="application/pdf" class="w-full text-sm border p-2 rounded-lg bg-slate-50"></div>
-            </div>
-            <div class="mt-6 flex space-x-2">
-                <button onclick="executeCompare()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-bold transition">เริ่มเปรียบเทียบ</button>
-                <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold transition">ยกเลิก</button>
-            </div>
-        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg"><h3 class="font-bold text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3><input type="file" id="compare-old" class="w-full mb-2 border p-2 text-sm"><input type="file" id="compare-new" class="w-full mb-4 border p-2 text-sm"><button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2 rounded-xl font-bold">เริ่มเปรียบเทียบ</button><button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2 rounded-xl font-bold">ยกเลิก</button></div>
     </div>
 
     <!-- Loading Overlay -->
@@ -301,35 +275,22 @@
         const loadingBox = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
 
-        // Capture Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+S)
+        // คีย์ลัด (Keyboard Shortcuts)
         document.addEventListener('keydown', (e) => {
-            // ไม่สนถ้ายูเซอร์กำลังพิมพ์ข้อความในช่อง Input อยู่
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
             if (e.ctrlKey || e.metaKey) {
-                if (e.key.toLowerCase() === 'z') {
-                    e.preventDefault();
-                    if (e.shiftKey) redo(); else undo();
-                } else if (e.key.toLowerCase() === 'y') {
-                    e.preventDefault(); redo();
-                } else if (e.key.toLowerCase() === 'a') {
-                    e.preventDefault(); selectAll();
-                } else if (e.key.toLowerCase() === 's') {
-                    e.preventDefault(); saveOrganizerPDF();
-                }
+                if (e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } 
+                else if (e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); } 
+                else if (e.key.toLowerCase() === 'a') { e.preventDefault(); selectAll(); } 
+                else if (e.key.toLowerCase() === 's') { e.preventDefault(); saveOrganizerPDF(); }
             } else if (e.key === 'Delete') {
                 deleteSelected();
             }
         });
 
         function saveState() {
-            // โคลน State ปัจจุบันเก็บลง Stack ก่อนทำลาย
-            const snapshot = {
-                pages: loadedPages.map(p => ({ ...p })), // Shallow copy property
-                selected: new Set(selectedIndices)
-            };
-            undoStack.push(snapshot);
-            redoStack = []; // เคลียร์ Redo ออกเมื่อมีการขยับใหม่
+            undoStack.push({ pages: loadedPages.map(p => ({...p})), selected: new Set(selectedIndices) });
+            redoStack = []; 
             if (undoStack.length > 50) undoStack.shift();
             updateUndoRedoButtons();
         }
@@ -340,8 +301,7 @@
             const state = undoStack.pop();
             loadedPages = state.pages.map(p => ({...p}));
             selectedIndices = new Set(state.selected);
-            renderGrid();
-            updateUndoRedoButtons();
+            renderGrid(); updateUndoRedoButtons();
         }
 
         function redo() {
@@ -350,8 +310,7 @@
             const state = redoStack.pop();
             loadedPages = state.pages.map(p => ({...p}));
             selectedIndices = new Set(state.selected);
-            renderGrid();
-            updateUndoRedoButtons();
+            renderGrid(); updateUndoRedoButtons();
         }
 
         function updateUndoRedoButtons() {
@@ -363,11 +322,10 @@
             }
         }
 
-        // Drag events
         dropZone.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') fileInput.click(); });
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'); });
         dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drag-active'); handleFiles(e.dataTransfer.files); });
 
         async function handleFiles(files) {
@@ -375,7 +333,7 @@
             if (validFiles.length === 0) return alert('กรุณาเลือกไฟล์ PDF');
 
             showLoading("กำลังโหลดหน้าเอกสาร...");
-            saveState(); // Save state before adding new files
+            saveState(); 
 
             try {
                 for (let file of validFiles) {
@@ -396,8 +354,7 @@
                 document.getElementById('toolbar').classList.remove('hidden');
                 document.getElementById('btn-save').classList.remove('hidden');
                 dropZone.classList.add('border-emerald-500', 'bg-emerald-50');
-                renderGrid();
-                updateUndoRedoButtons();
+                renderGrid(); updateUndoRedoButtons();
             } catch (err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); } finally { hideLoading(); }
         }
 
@@ -413,15 +370,49 @@
                 card.className = `page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm ${isSelected ? 'selected border-blue-600 bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
                 card.draggable = true;
                 
-                card.ondragstart = (e) => { draggedIndex = index; e.dataTransfer.setData('text/plain', index); card.classList.add('dragging'); };
-                card.ondragend = () => { card.classList.remove('dragging'); };
-                card.ondragover = (e) => { e.preventDefault(); };
+                // 📌 อัปเดตระบบ Drag & Drop ย้ายไฟล์พร้อมกันหลายหน้า (Multi-drag)
+                card.ondragstart = (e) => { 
+                    if (!selectedIndices.has(index)) { selectedIndices.clear(); selectedIndices.add(index); }
+                    draggedIndex = index; 
+                    e.dataTransfer.setData('text/plain', index); 
+                    card.classList.add('dragging'); 
+                };
+                card.ondragend = () => { card.classList.remove('dragging'); renderGrid(); };
+                card.ondragover = (e) => { 
+                    e.preventDefault(); 
+                    const rect = card.getBoundingClientRect();
+                    if (e.clientX > rect.left + rect.width / 2) {
+                        card.classList.add('border-r-4', 'border-emerald-500'); card.classList.remove('border-l-4');
+                    } else {
+                        card.classList.add('border-l-4', 'border-emerald-500'); card.classList.remove('border-r-4');
+                    }
+                };
+                card.ondragleave = () => { card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500'); };
+                
                 card.ondrop = (e) => {
                     e.preventDefault();
-                    if (draggedIndex === null || draggedIndex === index) return;
-                    saveState(); // Save state before reorder
-                    const movedItem = loadedPages.splice(draggedIndex, 1)[0];
-                    loadedPages.splice(index, 0, movedItem);
+                    card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500');
+                    if (draggedIndex === null || selectedIndices.has(index)) return;
+                    
+                    saveState(); 
+
+                    const sortedSelected = Array.from(selectedIndices).sort((a,b)=>a-b);
+                    const itemsToMove = sortedSelected.map(i => loadedPages[i]);
+                    const targetItem = loadedPages[index];
+
+                    const rect = card.getBoundingClientRect();
+                    const insertAfter = e.clientX > rect.left + rect.width / 2;
+
+                    loadedPages = loadedPages.filter((_, i) => !selectedIndices.has(i));
+
+                    let newTargetIndex = loadedPages.indexOf(targetItem);
+                    if (insertAfter) newTargetIndex++;
+
+                    loadedPages.splice(newTargetIndex, 0, ...itemsToMove);
+
+                    selectedIndices.clear();
+                    for (let i = 0; i < itemsToMove.length; i++) selectedIndices.add(newTargetIndex + i);
+
                     draggedIndex = null;
                     renderGrid();
                 };
@@ -499,20 +490,26 @@
                 const { PDFDocument } = PDFLib;
                 const newPdf = await PDFDocument.create();
                 const cache = {};
-                for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
+                
+                for (let i = 0; i < sourcePdfDocs.length; i++) {
+                    cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
+                }
 
                 for (let pd of loadedPages) {
                     const [copiedPage] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
-                    if (pd.rotation !== 0) copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pd.rotation));
-                    if (pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) copiedPage.setSize(STANDARD_SIZES[pd.sizeKey][0], STANDARD_SIZES[pd.sizeKey][1]);
+                    if (pd.rotation && pd.rotation !== 0) copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pd.rotation));
+                    if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) copiedPage.setSize(STANDARD_SIZES[pd.sizeKey][0], STANDARD_SIZES[pd.sizeKey][1]);
                     newPdf.addPage(copiedPage);
                 }
                 downloadFile(await newPdf.save(), "Master_Organized_Document.pdf");
-            } catch (err) { alert("เกิดข้อผิดพลาดในการบันทึก"); } finally { hideLoading(); }
+            } catch (err) { 
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message); 
+            } finally { hideLoading(); }
         }
 
         // =========================================================
-        // ✂️ แยกไฟล์ตามช่วงอิสระ (Split Range Fix)
+        // ✂️ โค้ดส่วนแยกไฟล์ (Split Tool) + JSZip Fix Multiple Downloads
         // =========================================================
         function openSplitModal() { 
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
@@ -562,13 +559,17 @@
                 if (rangesToExtract.length === 0) return alert("รูปแบบช่วงหน้าไม่ถูกต้องครับ");
             }
 
-            showLoading("กำลังหั่นและแยกไฟล์...");
+            if (rangesToExtract.length === 0) return;
+
+            showLoading(rangesToExtract.length > 1 ? "กำลังแยกไฟล์และบีบอัดเป็น ZIP..." : "กำลังแยกไฟล์...");
             try {
                 const { PDFDocument } = PDFLib;
                 const cache = {};
                 for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
-                for (let task of rangesToExtract) {
+                // หากมีแค่ไฟล์เดียว โหลดเป็น PDF ตามปกติ
+                if (rangesToExtract.length === 1) {
+                    const task = rangesToExtract[0];
                     const newPdf = await PDFDocument.create();
                     for (let idx of task.pages) {
                         const pd = loadedPages[idx];
@@ -576,14 +577,34 @@
                         newPdf.addPage(p);
                     }
                     downloadFile(await newPdf.save(), task.filename);
-                    await new Promise(r => setTimeout(r, 300)); 
+                } 
+                // หากมีหลายไฟล์ จับยัดใส่ ZIP ให้หมดเพื่อหลีกเลี่ยงการถูก Browser Block 
+                else {
+                    const zip = new JSZip();
+                    for (let task of rangesToExtract) {
+                        const newPdf = await PDFDocument.create();
+                        for (let idx of task.pages) {
+                            const pd = loadedPages[idx];
+                            const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
+                            newPdf.addPage(p);
+                        }
+                        const pdfBytes = await newPdf.save();
+                        zip.file(task.filename, pdfBytes);
+                    }
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(zipBlob);
+                    link.download = "Extracted_PDFs.zip";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 }
             } catch(e) { console.error(e); alert("ข้อผิดพลาดในการแยกไฟล์"); } 
             finally { hideLoading(); }
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์จริงบน Preview (Advanced Sign Preview)
+        // ✍️ ลายเซ็นต์และตรายาง (Preview จริง 100%)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5;
         let signMode = 'stamp';
@@ -608,7 +629,6 @@
             updateTargetAppearance();
         }
 
-        // อัปโหลดและจำค่ารูปภาพที่โชว์บนพรีวิว
         document.getElementById('sign-image-val').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -623,7 +643,6 @@
             }
         });
 
-        // 🔗 Hook ทุก Event ให้โชว์พรีวิวเปลี่ยนแบบ Real-time
         ['sign-scale', 'sign-color', 'sign-date', 'sign-stamp-val'].forEach(id => {
             document.getElementById(id).addEventListener('change', updateTargetAppearance);
             document.getElementById(id).addEventListener('input', updateTargetAppearance);
@@ -656,16 +675,14 @@
             targetBox.style.top = `${signRelY * 100}%`;
         }
 
-        // 👁️ วาดภาพจำลอง (Visual Proxy) ลายเซ็นลงบน HTML Canvas ทับกระดาษจริง
         function updateTargetAppearance() {
             const target = document.getElementById('sign-target');
             const scaleVal = parseFloat(document.getElementById('sign-scale').value) / 100.0;
             const color = document.getElementById('sign-color').value;
             const addDate = document.getElementById('sign-date').checked;
             
-            // ประเมินอัตราส่วนความกว้างของหน้าจอเพื่อกะขนาดพิกเซลให้แม่นยำขึ้น
             const rect = previewCanvas.getBoundingClientRect();
-            const screenRatio = (rect.width || 500) / 595.0; // 595 คือความกว้างของ A4
+            const screenRatio = (rect.width || 500) / 595.0; 
             
             target.innerHTML = '';
             target.style.color = color;
@@ -756,7 +773,6 @@
                     const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
                     
                     const { width, height } = p.getSize();
-                    // pdf-lib Y แกน 0 เริ่มจากด้านล่างกระดาษ, จึงต้องกลับข้าง (1 - signRelY)
                     const drawX = width * signRelX;
                     const drawY = height * (1 - signRelY);
 
@@ -783,13 +799,14 @@
                     }
                     newPdf.addPage(p);
                 }
+                saveState();
                 downloadFile(await newPdf.save(), "Signed_Document.pdf");
             } catch(e) { console.error(e); alert("ข้อผิดพลาด: " + e.message); } 
             finally { hideLoading(); }
         }
 
         // =========================================================
-        // Tools อื่นๆ
+        // Tools ย่อยอื่นๆ (Redact, Highlight, Excel, Compare)
         // =========================================================
         async function toolRedaction() {
             if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
