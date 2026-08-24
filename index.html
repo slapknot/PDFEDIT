@@ -339,6 +339,22 @@
         </div>
     </div>
 
+    <!-- Modal: Large Preview (พรีวิวดูหน้าชัดๆ) -->
+    <div id="modal-preview" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onclick="closePreviewModal(event)">
+        <div class="bg-white p-4 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col relative" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="preview-modal-title" class="font-bold text-xl text-slate-800">🔍 พรีวิวหน้าเอกสารแบบขยาย</h3>
+                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-2xl transition">✖</button>
+            </div>
+            <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-center justify-center p-4 shadow-inner relative">
+                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full"></canvas>
+            </div>
+            <div class="text-xs text-slate-500 mt-3 font-bold text-center">
+                💡 สามารถใช้ลูกกลิ้งเมาส์ (Scroll) เพื่อเลื่อนดูรายละเอียดหน้าได้
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loading" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
         <div class="bg-white p-6 rounded-2xl shadow-xl flex items-center space-x-4">
@@ -506,7 +522,7 @@
 
                 // 🛑 โค้ดสำคัญ! อัปเดตเฉพาะสีการ์ด "ห้ามดึง renderGrid() ซ้ำเด็ดขาด" เวลาคลิกหน้ากระดาษ
                 card.onclick = (e) => { 
-                    if (e.target.tagName !== 'SELECT') {
+                    if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON') {
                         handleCardClick(e, index);
                         updateSelectionUI(); 
                     }
@@ -516,17 +532,32 @@
                 canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-36 w-auto object-contain pointer-events-none mx-auto';
                 card.appendChild(canvas);
                 
-                const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
-                ctrlBar.innerHTML = `<span>P.${index + 1}</span>`;
+                const ctrlBar = document.createElement('div'); 
+                ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500 gap-1';
+                
+                const pageLabel = document.createElement('span');
+                pageLabel.textContent = `P.${index + 1}`;
+                
+                // --- เพิ่มปุ่มพรีวิว (แว่นขยาย) ตรงนี้ ---
+                const previewBtn = document.createElement('button');
+                previewBtn.innerHTML = '🔍';
+                previewBtn.className = 'hover:bg-blue-100 hover:scale-110 p-1.5 rounded-lg transition text-blue-600 bg-slate-50 border border-slate-200 shadow-sm';
+                previewBtn.title = 'พรีวิวภาพขยาย';
+                previewBtn.onclick = (e) => {
+                    e.stopPropagation(); // หยุดอีเวนต์ไม่ให้ไปคลิกเลือกกระดาษ (Select Card)
+                    openPreviewModal(index);
+                };
                 
                 // นำปุ่ม Dropdown ปรับไซส์แต่ละหน้ากลับมาตามที่ต้องการ
-                const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-1 text-xs bg-slate-50 font-semibold cursor-pointer';
+                const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-1 text-xs bg-slate-50 font-semibold cursor-pointer ml-auto';
                 Object.keys(STANDARD_SIZES).forEach(s => {
                     const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
                     if (pageData.sizeKey === s) opt.selected = true; sizeSelect.appendChild(opt);
                 });
-                // ให้วาดรูปใหม่แค่เฉพาะใบนั้น
                 sizeSelect.onchange = (e) => { saveState(); pageData.sizeKey = e.target.value; renderGrid(); };
+                
+                ctrlBar.appendChild(pageLabel);
+                ctrlBar.appendChild(previewBtn);
                 ctrlBar.appendChild(sizeSelect);
                 card.appendChild(ctrlBar); 
                 gridContainer.appendChild(card);
@@ -1354,6 +1385,50 @@
                     mCtx.lineWidth = 2;
                     mCtx.stroke();
                  }
+            }
+        }
+
+        // =========================================================
+        // 🔍 Preview Modal Logic (ซูมดูหน้าชัดๆ)
+        // =========================================================
+        async function openPreviewModal(index) {
+            const modal = document.getElementById('modal-preview');
+            const canvas = document.getElementById('preview-modal-canvas');
+            const title = document.getElementById('preview-modal-title');
+            
+            modal.classList.remove('hidden');
+            title.textContent = `🔍 พรีวิวหน้าเอกสาร (แผ่นที่ ${index + 1})`;
+            showLoading("กำลังโหลดภาพความละเอียดสูง...");
+            
+            try {
+                const pd = loadedPages[index];
+                const page = await pd.pdfDocJs.getPage(pd.pageNumber);
+                
+                // คำนวณองศาเผื่อผู้ใช้กดหมุนเอาไว้
+                const totalRot = (pd.initialRotation + pd.rotation) % 360;
+                
+                // ใช้ Scale สูง (1.5) เพื่อให้ภาพชัดเวลาขยายดู
+                const viewport = page.getViewport({ scale: 1.5, rotation: totalRot });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            } catch (err) {
+                console.error("Preview Error:", err);
+                alert("ไม่สามารถโหลดภาพพรีวิวได้");
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function closePreviewModal(e) {
+            // ปิดเมื่อกดปุ่มกากบาท (e เป็น undefined) หรือคลิกพื้นที่สีดำรอบข้าง (e.target.id ตรงกับกล่องนอก)
+            if (!e || e.target.id === 'modal-preview') {
+                document.getElementById('modal-preview').classList.add('hidden');
             }
         }
 
