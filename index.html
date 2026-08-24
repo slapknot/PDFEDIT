@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ หรือเลือกเครื่องมือด้านล่าง</p>
+                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้า ปรับขนาดสเกลคอนเทนต์ได้อิสระ</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -165,7 +165,7 @@
                     <input type="radio" name="convert-mode" value="image" class="w-4 h-4 text-blue-600">
                     <div>
                         <span class="block font-bold text-sm">แปลงเป็นรูปภาพ (Uncopyable)</span>
-                        <span class="text-xs text-slate-500">แปลงให้เป็นภาพทั้งไฟล์ ป้องกันการ Drag copy ข้อความ 100%</span>
+                        <span class="text-xs text-slate-500">แปลงให้เป็นภาพทั้งไฟล์ ป้องกันการ Drag copy 100%</span>
                     </div>
                 </label>
             </div>
@@ -217,7 +217,7 @@
 
                 <div id="input-stamp" class="mb-4">
                     <label class="block text-xs font-bold text-slate-600 mb-1">เลือกคำตรายาง:</label>
-                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500">
+                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold outline-none">
                         <option value="APPROVED">APPROVED (อนุมัติ)</option>
                         <option value="REJECTED">REJECTED (ไม่อนุมัติ)</option>
                         <option value="DRAFT">DRAFT (ฉบับร่าง)</option>
@@ -228,7 +228,7 @@
 
                 <div id="input-text" class="mb-4 hidden">
                     <label class="block text-xs font-bold text-slate-600 mb-1">พิมพ์ข้อความ (Eng Only):</label>
-                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none focus:border-blue-500">
+                    <input type="text" id="sign-text-val" placeholder="Type your text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none">
                 </div>
 
                 <div id="input-image" class="mb-4 hidden">
@@ -239,7 +239,6 @@
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-slate-600 mb-1">หน้าที่จะประทับ (เช่น all, 1, 1-3, 5):</label>
                     <input type="text" id="sign-pages" value="all" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none font-bold text-blue-600">
-                    <p class="text-[10px] text-slate-500 mt-1">ค่าเริ่มต้นคือหน้าที่เลือกไว้ หากพิมพ์ "all" จะประทับทุกหน้า</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -272,21 +271,16 @@
                 </div>
             </div>
 
-            <!-- Right: Interactive Preview (Real Image) -->
+            <!-- Right: Interactive Preview -->
             <div class="w-full md:w-1/2 flex flex-col bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative mt-4 md:mt-0">
                 <div class="bg-slate-200 p-2 border-b border-slate-300 flex justify-between items-center px-4">
                     <span class="text-xs font-bold text-slate-600">🔍 พรีวิว: คลิกลากภาพลงบนกระดาษ</span>
-                    <select id="sign-preview-page" class="text-xs p-1 rounded border outline-none font-bold" onchange="renderSignPreview(parseInt(this.value))">
-                        <!-- Options generated dynamically -->
-                    </select>
+                    <select id="sign-preview-page" class="text-xs p-1 rounded border outline-none font-bold" onchange="renderSignPreview(parseInt(this.value))"></select>
                 </div>
                 <div class="flex-1 relative overflow-auto flex items-center justify-center p-4 bg-slate-100" id="sign-preview-container">
                     <div class="relative inline-block shadow-md bg-white">
                         <canvas id="sign-preview-canvas" class="block max-h-[55vh] object-contain cursor-crosshair"></canvas>
-                        
-                        <!-- 🎯 เป้าหมายที่จะเปลี่ยนหน้าตาตามโหมดที่เลือก -->
-                        <div id="sign-target" class="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center whitespace-nowrap transition-none cursor-move" style="top: 80%; left: 80%;">
-                        </div>
+                        <div id="sign-target" class="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center whitespace-nowrap transition-none cursor-move" style="top: 80%; left: 80%;"></div>
                     </div>
                 </div>
             </div>
@@ -294,7 +288,7 @@
         </div>
     </div>
 
-    <!-- Modals (Measure & Compare) ... (โค้ดยังเหมือนเดิม) ... -->
+    <!-- Modals (Measure & Compare) -->
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง</h3><button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button></div>
@@ -316,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer & Undo/Redo System)
+        // Core Logic (Organizer, Undo/Redo & Auto Content Scaling)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -377,7 +371,6 @@
             }
         }
 
-        // Drag & Drop
         dropZone.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') fileInput.click(); });
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-active'); });
@@ -418,7 +411,6 @@
                 card.className = `page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm ${isSelected ? 'selected border-blue-600 bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
                 card.draggable = true;
                 
-                // 📌 Drag & Drop Fix
                 card.ondragstart = (e) => { 
                     if (!selectedIndices.has(index)) { selectedIndices.clear(); selectedIndices.add(index); }
                     draggedIndex = index; e.dataTransfer.setData('text/plain', index); card.classList.add('dragging'); 
@@ -438,24 +430,17 @@
 
                     const sortedSelected = Array.from(selectedIndices).sort((a,b)=>a-b);
                     const itemsToMove = sortedSelected.map(i => loadedPages[i]);
-                    const targetItem = loadedPages[index]; // จำชิ้นเป้าหมายไว้ก่อน
+                    const targetItem = loadedPages[index];
                     const rect = card.getBoundingClientRect();
                     const insertAfter = e.clientX > rect.left + rect.width / 2;
 
-                    // กรองเอาของที่เลือกออกไป
                     loadedPages = loadedPages.filter((_, i) => !selectedIndices.has(i));
-
-                    // หาตำแหน่งใหม่ของเป้าหมาย
                     let newTargetIndex = loadedPages.indexOf(targetItem);
                     if (insertAfter) newTargetIndex++;
 
-                    // ยัดลงไปใน Array
                     loadedPages.splice(newTargetIndex, 0, ...itemsToMove);
-
-                    // อัปเดต Selection ใหม่
                     selectedIndices.clear();
                     for (let i = 0; i < itemsToMove.length; i++) selectedIndices.add(newTargetIndex + i);
-
                     draggedIndex = null; renderGrid();
                 };
 
@@ -465,8 +450,12 @@
                 const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
                 ctrlBar.innerHTML = `<span>P.${index + 1}</span>`;
                 const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-1 text-xs bg-slate-50 font-semibold cursor-pointer';
-                Object.keys(STANDARD_SIZES).forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; if (pageData.sizeKey === s) opt.selected = true; sizeSelect.appendChild(opt); });
-                sizeSelect.onchange = (e) => { saveState(); pageData.sizeKey = e.target.value; }; ctrlBar.appendChild(sizeSelect);
+                Object.keys(STANDARD_SIZES).forEach(s => {
+                    const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
+                    if (pageData.sizeKey === s) opt.selected = true; sizeSelect.appendChild(opt);
+                });
+                sizeSelect.onchange = (e) => { saveState(); pageData.sizeKey = e.target.value; };
+                ctrlBar.appendChild(sizeSelect);
                 card.appendChild(ctrlBar); gridContainer.appendChild(card);
                 try {
                     const page = await pageData.pdfDocJs.getPage(pageData.pageNumber); const viewport = page.getViewport({ scale: 0.25, rotation: pageData.rotation });
@@ -489,16 +478,61 @@
         function rotateSelected(deg) { if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); saveState(); selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); renderGrid(); }
         function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
+        // =========================================================
+        // 🚀 Helper: Append Processed Page (Auto Content Scale!)
+        // =========================================================
+        async function appendProcessedPage(newPdf, sourcePdf, pd) {
+            const { PDFLib } = window;
+            const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
+            let currentRot = copiedPage.getRotation().angle;
+            
+            if (pd.rotation && pd.rotation !== 0) {
+                currentRot = (currentRot + pd.rotation) % 360;
+                copiedPage.setRotation(PDFLib.degrees(currentRot));
+            }
+
+            if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
+                try {
+                    // Method A: Safe Content Scaling by Embedding XObject
+                    const embeddedPage = await newPdf.embedPage(copiedPage);
+                    let [targetW, targetH] = STANDARD_SIZES[pd.sizeKey];
+                    
+                    const eW = embeddedPage.width;
+                    const eH = embeddedPage.height;
+                    
+                    if ((eW > eH && targetW < targetH) || (eW < eH && targetW > targetH)) {
+                        const temp = targetW; targetW = targetH; targetH = temp;
+                    }
+                    
+                    const newPage = newPdf.addPage([targetW, targetH]);
+                    const scaleFactor = Math.min(targetW / eW, targetH / eH);
+                    
+                    const drawW = eW * scaleFactor;
+                    const drawH = eH * scaleFactor;
+                    const tx = (targetW - drawW) / 2;
+                    const ty = (targetH - drawH) / 2;
+
+                    newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
+                    return newPage;
+                } catch (e) {
+                    console.error("Fallback standard copy due to error:", e);
+                    newPdf.addPage(copiedPage);
+                    return copiedPage;
+                }
+            } else {
+                newPdf.addPage(copiedPage);
+                return copiedPage;
+            }
+        }
+
         async function saveOrganizerPDF() {
             if (loadedPages.length === 0) return; showLoading("กำลังสร้างไฟล์ PDF ใหม่...");
             try {
                 const { PDFDocument } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
+                
                 for (let pd of loadedPages) {
-                    const [copiedPage] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
-                    if (pd.rotation && pd.rotation !== 0) copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pd.rotation));
-                    if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) copiedPage.setSize(STANDARD_SIZES[pd.sizeKey][0], STANDARD_SIZES[pd.sizeKey][1]);
-                    newPdf.addPage(copiedPage);
+                    await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                 }
                 downloadFile(await newPdf.save(), "Master_Organized_Document.pdf");
             } catch (err) { alert("เกิดข้อผิดพลาดในการบันทึก"); } finally { hideLoading(); }
@@ -516,7 +550,7 @@
                 const { PDFDocument } = PDFLib; const newPdf = await PDFDocument.create();
                 if (mode === 'lossless') {
                     const cache = {}; for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
-                    for (let pd of loadedPages) { const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]); newPdf.addPage(p); }
+                    for (let pd of loadedPages) { await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd); }
                     downloadFile(await newPdf.save({ useObjectStreams: true }), "Compressed_Lossless.pdf");
                 } 
                 else if (mode === 'image' || mode === 'ocr') {
@@ -563,47 +597,39 @@
                 const { PDFDocument } = PDFLib; const cache = {}; for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
                 if (rangesToExtract.length === 1) {
                     const task = rangesToExtract[0]; const newPdf = await PDFDocument.create();
-                    for (let idx of task.pages) { const [p] = await newPdf.copyPages(cache[loadedPages[idx].sourceIdx], [loadedPages[idx].pageIndex]); newPdf.addPage(p); }
+                    for (let idx of task.pages) { await appendProcessedPage(newPdf, cache[loadedPages[idx].sourceIdx], loadedPages[idx]); }
                     downloadFile(await newPdf.save(), task.filename);
                 } else {
                     const zip = new JSZip();
                     for (let task of rangesToExtract) {
                         const newPdf = await PDFDocument.create();
-                        for (let idx of task.pages) { const [p] = await newPdf.copyPages(cache[loadedPages[idx].sourceIdx], [loadedPages[idx].pageIndex]); newPdf.addPage(p); }
+                        for (let idx of task.pages) { await appendProcessedPage(newPdf, cache[loadedPages[idx].sourceIdx], loadedPages[idx]); }
                         zip.file(task.filename, await newPdf.save());
                     }
                     downloadFile(await zip.generateAsync({ type: "blob" }), "Extracted_PDFs.zip", "application/zip");
                 }
-            } catch(e) { alert("ข้อผิดพลาดในการแยกไฟล์"); } finally { hideLoading(); }
+            } catch(e) { console.error(e); alert("ข้อผิดพลาดในการแยกไฟล์"); } finally { hideLoading(); }
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool) - Scale Slider & Page Selection
+        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5; let signMode = 'stamp';
         let previewCanvas = document.getElementById('sign-preview-canvas');
         let uploadedImageSrc = null; let origImgW = 160, origImgH = 60;
-        let previewPageIdx = 0; // หน้าที่โชว์ใน Preview
+        let previewPageIdx = 0; 
 
         function openSignModal() { 
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
             document.getElementById('modal-sign').classList.remove('hidden'); 
             
-            // ตั้งค่าช่อง Input เลือกหน้า (เอาจากที่ Select ไว้)
             document.getElementById('sign-pages').value = selectedIndices.size > 0 ? Array.from(selectedIndices).map(i => i+1).sort((a,b)=>a-b).join(', ') : "all";
-            
-            // สร้างเมนู Preview Page
-            const sel = document.getElementById('sign-preview-page');
-            sel.innerHTML = '';
+            const sel = document.getElementById('sign-preview-page'); sel.innerHTML = '';
             for(let i=0; i<loadedPages.length; i++) {
-                const opt = document.createElement('option');
-                opt.value = i; opt.textContent = `หน้า ${i+1}`;
-                sel.appendChild(opt);
+                const opt = document.createElement('option'); opt.value = i; opt.textContent = `หน้า ${i+1}`; sel.appendChild(opt);
             }
             previewPageIdx = selectedIndices.size > 0 ? Array.from(selectedIndices).sort((a,b)=>a-b)[0] : 0;
-            sel.value = previewPageIdx;
-
-            renderSignPreview(previewPageIdx); 
+            sel.value = previewPageIdx; renderSignPreview(previewPageIdx); 
         }
 
         function setSignMode(mode) {
@@ -629,10 +655,8 @@
             }
         });
 
-        // Event for Real-time scale
         document.getElementById('sign-scale').addEventListener('input', (e) => {
-            document.getElementById('sign-scale-display').textContent = e.target.value + '%';
-            updateTargetAppearance();
+            document.getElementById('sign-scale-display').textContent = e.target.value + '%'; updateTargetAppearance();
         });
 
         ['sign-color', 'sign-date', 'sign-stamp-val'].forEach(id => {
@@ -682,14 +706,11 @@
         }
 
         async function executeSignAndStamp() {
-            // 解析ช่อง input หน้า
-            let targetPages = [];
-            let pageInput = document.getElementById('sign-pages').value.trim().toLowerCase();
+            let targetPages = []; let pageInput = document.getElementById('sign-pages').value.trim().toLowerCase();
             if (pageInput === 'all' || pageInput === '') {
                 for(let i=0; i<loadedPages.length; i++) targetPages.push(i);
             } else {
-                const parts = pageInput.split(',');
-                for (let part of parts) {
+                for (let part of pageInput.split(',')) {
                     if (part.includes('-')) {
                         let [s, e] = part.split('-'); let start = parseInt(s)-1; let end = parseInt(e)-1;
                         for(let i=start; i<=end; i++) if(i>=0 && i<loadedPages.length) targetPages.push(i);
@@ -715,9 +736,9 @@
                 }
                 const font = await newPdf.embedFont(PDFLib.StandardFonts.HelveticaBold); const timestamp = new Date().toLocaleString('th-TH');
 
-                // นำเข้าทุกหน้า แต่ประทับเฉพาะหน้า targetPages
                 for (let idx = 0; idx < loadedPages.length; idx++) {
-                    const pd = loadedPages[idx]; const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
+                    const pd = loadedPages[idx]; 
+                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                     
                     if (targetPages.includes(idx)) {
                         const { width, height } = p.getSize(); const drawX = width * signRelX; const drawY = height * (1 - signRelY);
@@ -735,9 +756,8 @@
                             if (addDate) p.drawText(timestamp, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2) - (15 * scaleVal), size: 10 * scaleVal, color: colorRGB });
                         }
                     }
-                    newPdf.addPage(p);
                 }
-                downloadFile(await newPdf.save(), "Signed_Document.pdf");
+                saveState(); downloadFile(await newPdf.save(), "Signed_Document.pdf");
             } catch(e) { console.error(e); alert("ข้อผิดพลาด: " + e.message); } finally { hideLoading(); }
         }
 
@@ -751,8 +771,8 @@
                 const { PDFDocument, rgb } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
                 for (let pd of loadedPages) {
-                    const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
-                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 200, height: 30, color: rgb(0, 0, 0) }); newPdf.addPage(p);
+                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
+                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 200, height: 30, color: rgb(0, 0, 0) }); 
                 }
                 downloadFile(await newPdf.save(), "Redacted_Document.pdf");
             } catch(e) {} finally { hideLoading(); }
@@ -765,8 +785,8 @@
                 const { PDFDocument, rgb } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
                 for (let pd of loadedPages) {
-                    const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
-                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 100, height: 20, color: rgb(1, 1, 0), opacity: 0.5 }); newPdf.addPage(p);
+                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
+                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 100, height: 20, color: rgb(1, 1, 0), opacity: 0.5 }); 
                 }
                 downloadFile(await newPdf.save(), "Highlighted_Document.pdf");
             } catch(e) {} finally { hideLoading(); }
