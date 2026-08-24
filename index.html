@@ -19,8 +19,8 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .drag-active { border-color: #10B981 !important; background-color: #ECFDF5 !important; }
-        .page-card { transition: box-shadow 0.1s ease, border-color 0.1s ease; }
-        .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); background-color: rgba(37, 99, 235, 0.03); }
+        .page-card { transition: box-shadow 0.2s ease, opacity 0.2s ease; }
+        .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
         .page-card.dragging { opacity: 0.5; }
     </style>
 </head>
@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">คลิกเลือกหน้าได้อย่างลื่นไหล ไม่กระตุก | รองรับ Multi-drag สลับหน้ากลุ่ม</p>
+                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ ไม่มีหน้าซ้ำ ปรับสเกลเนื้อหาตรงกับพรีวิว</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -310,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Optimized Click Performance)
+        // Core Logic (Organizer, Undo/Redo & Exact Export Sync)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -444,14 +444,7 @@
                     draggedIndex = null; renderGrid();
                 };
 
-                // 🚀 Optimized Click Handler (อัปเดตแค่ CSS Class ไม่เรนเดอร์ Canvas ซ้ำ ป้องกันอาการรวน)
-                card.onclick = (e) => { 
-                    if (e.target.tagName !== 'SELECT') {
-                        handleCardClick(e, index);
-                        updateSelectionUI();
-                    }
-                };
-
+                card.onclick = (e) => { if (e.target.tagName !== 'SELECT') handleCardClick(e, index); };
                 const canvas = document.createElement('canvas'); canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-36 object-contain pointer-events-none';
                 card.appendChild(canvas);
                 const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
@@ -478,54 +471,31 @@
             } else if (event.ctrlKey || event.metaKey) {
                 selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); lastClickedIndex = index;
             } else { selectedIndices.clear(); selectedIndices.add(index); lastClickedIndex = index; }
+            renderGrid();
         }
 
-        // 🚀 อัปเดต UI หน้าจอเฉพาะตอนคลิกเลือก (ลื่นไหล ไม่กระตุก)
-        function updateSelectionUI() {
-            const cards = gridContainer.children;
-            for (let i = 0; i < cards.length; i++) {
-                const card = cards[i];
-                if (selectedIndices.has(i)) {
-                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
-                } else {
-                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
-                }
-            }
-            document.getElementById('page-counter').textContent = `ทั้งหมด: ${loadedPages.length} หน้า | เลือก: ${selectedIndices.size} หน้า`;
-        }
-
-        function selectAll() { 
-            selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); 
-            updateSelectionUI(); 
-        }
-
-        function rotateSelected(deg) { 
-            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); 
-            saveState(); 
-            selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); 
-            renderGrid(); 
-        }
-
-        function deleteSelected() { 
-            if (selectedIndices.size === 0) return; 
-            saveState(); 
-            loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); 
-            selectedIndices.clear(); lastClickedIndex = null; 
-            renderGrid(); 
-        }
+        function selectAll() { selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); renderGrid(); }
+        function rotateSelected(deg) { if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); saveState(); selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); renderGrid(); }
+        function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
         // =========================================================
         // 🚀 Helper: Perfect Append Processed Page (Exact Preview Sync)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            copiedPage.setRotation(PDFLib.degrees(pd.rotation || 0));
+            const origSize = copiedPage.getSize(); // unrotated MediaBox size, in original PDF content-stream units
+            const rotation = pd.rotation || 0;
+
+            // Set exact absolute rotation
+            copiedPage.setRotation(PDFLib.degrees(rotation));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
                     const embeddedPage = await newPdf.embedPage(copiedPage);
                     let [targetW, targetH] = STANDARD_SIZES[pd.sizeKey];
-                    const eW = embeddedPage.width; const eH = embeddedPage.height;
+                    
+                    const eW = embeddedPage.width;
+                    const eH = embeddedPage.height;
                     
                     if ((eW > eH && targetW < targetH) || (eW < eH && targetW > targetH)) {
                         const temp = targetW; targetW = targetH; targetH = temp;
@@ -533,19 +503,74 @@
                     
                     const newPage = newPdf.addPage([targetW, targetH]);
                     const scaleFactor = Math.min(targetW / eW, targetH / eH);
-                    const drawW = eW * scaleFactor; const drawH = eH * scaleFactor;
-                    const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
+                    
+                    const drawW = eW * scaleFactor;
+                    const drawH = eH * scaleFactor;
+                    const tx = (targetW - drawW) / 2;
+                    const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
-                    return newPage;
+                    // Resize path: embedPage bakes the page's own rotation into the drawn content,
+                    // so downstream coordinate mapping must rotate first, then scale/offset.
+                    return { page: newPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
                 } catch (e) {
                     newPdf.addPage(copiedPage);
-                    return copiedPage;
+                    return { page: copiedPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                return copiedPage;
+                // Original-size path: content stream stays UNROTATED, /Rotate is only a display flag,
+                // so coordinates map 1:1 to the original page space (no scale/offset needed).
+                return { page: copiedPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
             }
+        }
+
+        // --- Coordinate helpers -----------------------------------------------------
+        // Normalizes a rotation value to one of 0/90/180/270.
+        function norm360(r) { return ((r % 360) + 360) % 360; }
+
+        // Returns the "as displayed" (visually rotated) width/height for a page,
+        // given its original (unrotated) width/height and rotation.
+        function displayDims(origWidth, origHeight, rotation) {
+            const r = norm360(rotation);
+            return (r === 90 || r === 270) ? { w: origHeight, h: origWidth } : { w: origWidth, h: origHeight };
+        }
+
+        // Maps a point given as a fraction of the DISPLAYED page (relX, relY; relY measured
+        // from the top, matching how the preview canvas captures clicks) into the coordinate
+        // system of the final output page described by `meta` (as returned by appendProcessedPage).
+        function mapDisplayPointToPage(relX, relY, meta) {
+            const { w: dispW, h: dispH } = displayDims(meta.origWidth, meta.origHeight, meta.rotation);
+            const Xd = dispW * relX;
+            const Yd = dispH * (1 - relY); // bottom-left origin
+
+            if (meta.baked) {
+                // Final page content already IS the rotated/visual orientation - map directly.
+                return { x: Xd * meta.scale + meta.offsetX, y: Yd * meta.scale + meta.offsetY };
+            }
+
+            // Final page content is still in the ORIGINAL (unrotated) orientation - invert the
+            // display rotation to find the matching point in that original coordinate space.
+            const r = norm360(meta.rotation);
+            if (r === 90) return { x: dispH - Yd, y: Xd };
+            if (r === 180) return { x: dispW - Xd, y: dispH - Yd };
+            if (r === 270) return { x: Yd, y: dispW - Xd };
+            return { x: Xd, y: Yd };
+        }
+
+        // Maps a point given in ORIGINAL (unrotated) page coordinates - e.g. from pdf.js
+        // getTextContent(), which always reports positions in that space - into the coordinate
+        // system of the final output page described by `meta`.
+        function mapOriginalPointToPage(x, y, meta) {
+            if (!meta.baked) return { x, y };
+            const r = norm360(meta.rotation);
+            const w = meta.origWidth, h = meta.origHeight;
+            let X, Y;
+            if (r === 90) { X = y; Y = w - x; }
+            else if (r === 180) { X = w - x; Y = h - y; }
+            else if (r === 270) { X = h - y; Y = x; }
+            else { X = x; Y = y; }
+            return { x: X * meta.scale + meta.offsetX, y: Y * meta.scale + meta.offsetY };
         }
 
         async function saveOrganizerPDF() {
@@ -632,7 +657,7 @@
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool)
+        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool - Exact Coordinate Sync)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5; let signMode = 'stamp';
         let previewCanvas = document.getElementById('sign-preview-canvas');
@@ -785,10 +810,13 @@
 
                 for (let idx = 0; idx < loadedPages.length; idx++) {
                     const pd = loadedPages[idx]; 
-                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
+                    const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                     
                     if (targetPages.includes(idx)) {
-                        const { width, height } = p.getSize(); const drawX = width * signRelX; const drawY = height * (1 - signRelY);
+                        // Map the click position (captured relative to the ROTATED preview) into
+                        // this page's own coordinate system - fixes stamps landing in the wrong
+                        // spot whenever a page has been rotated in the organizer.
+                        const { x: drawX, y: drawY } = mapDisplayPointToPage(signRelX, signRelY, meta);
                         
                         if (signMode === 'stamp') {
                             const stampText = document.getElementById('sign-stamp-val').value; const fontSize = 24 * scaleVal;
@@ -824,32 +852,73 @@
         // =========================================================
         // Other Tools (Redact, Highlight, Excel, Compare, Measure)
         // =========================================================
+        // Finds every text run on a page whose string contains `needle` (case-insensitive)
+        // and returns its bounding box in ORIGINAL (unrotated) page coordinates.
+        async function findKeywordBoxes(pd, needle) {
+            const jsPage = await pd.pdfDocJs.getPage(pd.pageNumber);
+            const textContent = await jsPage.getTextContent();
+            const boxes = [];
+            for (let item of textContent.items) {
+                if (!item.str || !item.str.toLowerCase().includes(needle)) continue;
+                const fontH = item.height || Math.hypot(item.transform[2], item.transform[3]) || 10;
+                const x0 = item.transform[4], y0 = item.transform[5];
+                boxes.push({ x0, y0, x1: x0 + (item.width || fontH * needle.length * 0.5), y1: y0 + fontH });
+            }
+            return boxes;
+        }
+
+        function mapRectOriginalToPage(box, meta) {
+            const c1 = mapOriginalPointToPage(box.x0, box.y0, meta);
+            const c2 = mapOriginalPointToPage(box.x1, box.y1, meta);
+            return { x: Math.min(c1.x, c2.x), y: Math.min(c1.y, c2.y), width: Math.abs(c2.x - c1.x), height: Math.abs(c2.y - c1.y) };
+        }
+
         async function toolRedaction() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); const keyword = prompt("พิมพ์ข้อความที่ต้องการเซ็นเซอร์:"); if (!keyword) return;
-            showLoading("เซ็นเซอร์ข้อมูลจำลอง...");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
+            const keyword = prompt("พิมพ์ข้อความที่ต้องการเซ็นเซอร์ (ถมดำถาวร):"); if (!keyword || !keyword.trim()) return;
+            const needle = keyword.trim().toLowerCase();
+            showLoading("กำลังค้นหาและเซ็นเซอร์ข้อมูล...");
             try {
                 const { PDFDocument, rgb } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
+                let matchCount = 0;
                 for (let pd of loadedPages) {
-                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
-                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 200, height: 30, color: rgb(0, 0, 0) }); 
+                    const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
+                    const boxes = await findKeywordBoxes(pd, needle);
+                    for (let box of boxes) {
+                        const r = mapRectOriginalToPage(box, meta);
+                        p.drawRectangle({ x: r.x - 2, y: r.y - 2, width: r.width + 4, height: r.height + 4, color: rgb(0, 0, 0) });
+                        matchCount++;
+                    }
                 }
+                if (matchCount === 0) { hideLoading(); return alert(`ไม่พบคำว่า "${keyword}" ในเอกสาร (เครื่องมือนี้ค้นหาได้เฉพาะ PDF ที่มีข้อความจริง ไม่ใช่ไฟล์สแกน/รูปภาพ)`); }
                 downloadFile(await newPdf.save(), "Redacted_Document.pdf");
-            } catch(e) {} finally { hideLoading(); }
+                alert(`เซ็นเซอร์สำเร็จ พบและถมดำทั้งหมด ${matchCount} ตำแหน่ง`);
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาดในการเซ็นเซอร์"); } finally { hideLoading(); }
         }
 
         async function toolAutoHighlight() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); const keyword = prompt("กรอกคำที่ต้องการไฮไลต์:"); if (!keyword) return;
-            showLoading("กำลังไฮไลต์...");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
+            const keyword = prompt("กรอกคำที่ต้องการไฮไลต์:"); if (!keyword || !keyword.trim()) return;
+            const needle = keyword.trim().toLowerCase();
+            showLoading("กำลังค้นหาและไฮไลต์...");
             try {
                 const { PDFDocument, rgb } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
+                let matchCount = 0;
                 for (let pd of loadedPages) {
-                    const p = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
-                    p.drawRectangle({ x: 50, y: p.getSize().height - 100, width: 100, height: 20, color: rgb(1, 1, 0), opacity: 0.5 }); 
+                    const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
+                    const boxes = await findKeywordBoxes(pd, needle);
+                    for (let box of boxes) {
+                        const r = mapRectOriginalToPage(box, meta);
+                        p.drawRectangle({ x: r.x - 1, y: r.y - 1, width: r.width + 2, height: r.height + 2, color: rgb(1, 1, 0), opacity: 0.45 });
+                        matchCount++;
+                    }
                 }
+                if (matchCount === 0) { hideLoading(); return alert(`ไม่พบคำว่า "${keyword}" ในเอกสาร (เครื่องมือนี้ค้นหาได้เฉพาะ PDF ที่มีข้อความจริง ไม่ใช่ไฟล์สแกน/รูปภาพ)`); }
                 downloadFile(await newPdf.save(), "Highlighted_Document.pdf");
-            } catch(e) {} finally { hideLoading(); }
+                alert(`ไฮไลต์สำเร็จ พบทั้งหมด ${matchCount} ตำแหน่ง`);
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาดในการไฮไลต์"); } finally { hideLoading(); }
         }
 
         async function toolExtractExcel() {
@@ -888,23 +957,37 @@
                 const oldBytes = new Uint8Array(await oldFile.arrayBuffer()); const newBytes = new Uint8Array(await newFile.arrayBuffer());
                 const oldDocJs = await pdfjsLib.getDocument({ data: oldBytes.slice(0) }).promise; const newDocJs = await pdfjsLib.getDocument({ data: newBytes.slice(0) }).promise;
                 const { PDFDocument } = PDFLib; const diffPdf = await PDFDocument.create();
-                for (let i = 1; i <= 1; i++) { 
-                    const p1 = await oldDocJs.getPage(i); const p2 = await newDocJs.getPage(i); const v1 = p1.getViewport({ scale: 2.0 });
+                const pageCount = Math.min(oldDocJs.numPages, newDocJs.numPages);
+                if (oldDocJs.numPages !== newDocJs.numPages) {
+                    alert(`ไฟล์มีจำนวนหน้าไม่เท่ากัน (เก่า ${oldDocJs.numPages} หน้า / ใหม่ ${newDocJs.numPages} หน้า) จะเปรียบเทียบเฉพาะ ${pageCount} หน้าแรก`);
+                }
+                for (let i = 1; i <= pageCount; i++) {
+                    const p1 = await oldDocJs.getPage(i); const p2 = await newDocJs.getPage(i); const v1 = p1.getViewport({ scale: 2.0 }); const v2 = p2.getViewport({ scale: 2.0 });
                     const c1 = document.createElement('canvas'); c1.width = v1.width; c1.height = v1.height;
-                    const c2 = document.createElement('canvas'); c2.width = v1.width; c2.height = v1.height;
-                    await p1.render({ canvasContext: c1.getContext('2d'), viewport: v1 }).promise; await p2.render({ canvasContext: c2.getContext('2d'), viewport: p2.getViewport({ scale: 2.0 }) }).promise;
+                    const c2 = document.createElement('canvas'); c2.width = v2.width; c2.height = v2.height;
+                    await p1.render({ canvasContext: c1.getContext('2d'), viewport: v1 }).promise; await p2.render({ canvasContext: c2.getContext('2d'), viewport: v2 }).promise;
                     const ctx1 = c1.getContext('2d'); const d1 = ctx1.getImageData(0, 0, c1.width, c1.height).data;
                     const ctx2 = c2.getContext('2d'); const d2 = ctx2.getImageData(0, 0, c2.width, c2.height).data;
-                    const c3 = document.createElement('canvas'); c3.width = v1.width; c3.height = v1.height;
-                    const ctx3 = c3.getContext('2d'); const d3 = ctx3.createImageData(c3.width, c3.height);
-                    for (let j = 0; j < d1.length; j += 4) {
-                        const g1 = (d1[j] + d1[j+1] + d1[j+2]) / 3; const g2 = (d2[j] + d2[j+1] + d2[j+2]) / 3;
-                        d3.data[j] = Math.min(255, (255 * g2) / 255); d3.data[j+1] = Math.min(255, (g1 * g2) / 255); d3.data[j+2] = Math.min(255, (g1 * 255) / 255); d3.data[j+3] = 255;                                
+                    // Diff canvas covers the union of both page sizes so differently-sized
+                    // drawings (e.g. a revised sheet with an extra title block) never crash or
+                    // silently misalign - pixels outside a page's own bounds are treated as blank.
+                    const outW = Math.max(c1.width, c2.width); const outH = Math.max(c1.height, c2.height);
+                    const c3 = document.createElement('canvas'); c3.width = outW; c3.height = outH;
+                    const ctx3 = c3.getContext('2d'); const d3 = ctx3.createImageData(outW, outH);
+                    for (let row = 0; row < outH; row++) {
+                        const in1Row = row < c1.height; const in2Row = row < c2.height;
+                        for (let col = 0; col < outW; col++) {
+                            const outIdx = (row * outW + col) * 4;
+                            let g1 = 255, g2 = 255;
+                            if (in1Row && col < c1.width) { const idx1 = (row * c1.width + col) * 4; g1 = (d1[idx1] + d1[idx1+1] + d1[idx1+2]) / 3; }
+                            if (in2Row && col < c2.width) { const idx2 = (row * c2.width + col) * 4; g2 = (d2[idx2] + d2[idx2+1] + d2[idx2+2]) / 3; }
+                            d3.data[outIdx] = g2; d3.data[outIdx+1] = (g1 * g2) / 255; d3.data[outIdx+2] = g1; d3.data[outIdx+3] = 255;
+                        }
                     }
                     ctx3.putImageData(d3, 0, 0);
                     const imgDataUrl = c3.toDataURL('image/jpeg', 0.8); const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
-                    const jpgImage = await diffPdf.embedJpg(imgBytes); const page = diffPdf.addPage([v1.width, v1.height]);
-                    page.drawImage(jpgImage, { x: 0, y: 0, width: v1.width, height: v1.height });
+                    const jpgImage = await diffPdf.embedJpg(imgBytes); const page = diffPdf.addPage([outW, outH]);
+                    page.drawImage(jpgImage, { x: 0, y: 0, width: outW, height: outH });
                 }
                 downloadFile(await diffPdf.save(), "Compare_Result.pdf");
             } catch(e) { console.error(e); } finally { hideLoading(); }
