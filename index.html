@@ -742,21 +742,19 @@
         }
 
         // =========================================================
-        // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync)
+        // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync + CropBox Support)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            const origSize = copiedPage.getSize(); 
+            
             const sourceRot = copiedPage.getRotation().angle;
             const finalRot = (sourceRot + (pd.rotation || 0)) % 360;
             copiedPage.setRotation(PDFLib.degrees(finalRot));
 
-            let unrotatedW = origSize.width;
-            let unrotatedH = origSize.height;
-            if (sourceRot === 90 || sourceRot === 270) {
-                unrotatedW = origSize.height;
-                unrotatedH = origSize.width;
-            }
+            // ใช้ getCropBox เพื่อแก้ไขปัญหาแสตมป์ทะลุกรอบในไฟล์ CAD/Landscape
+            const box = copiedPage.getCropBox() || copiedPage.getMediaBox(); 
+            let unrotatedW = box.width;
+            let unrotatedH = box.height;
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
@@ -790,28 +788,61 @@
                         rotate: PDFLib.degrees(drawAngle)
                     });
 
-                    return { page: newPage, meta: { baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty, vW: targetW, vH: targetH } };
+                    return { page: newPage, meta: { baked: true, scale: scaleFactor, offsetX: 0, offsetY: 0, vW: targetW, vH: targetH } };
                 } catch(e) {
                     newPdf.addPage(copiedPage);
-                    return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: copiedPage.getSize().width, vH: copiedPage.getSize().height } };
+                    const vW = (finalRot === 90 || finalRot === 270) ? unrotatedH : unrotatedW;
+                    const vH = (finalRot === 90 || finalRot === 270) ? unrotatedW : unrotatedH;
+                    return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: vW, vH: vH, offsetX: box.x, offsetY: box.y } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: copiedPage.getSize().width, vH: copiedPage.getSize().height } };
+                const vW = (finalRot === 90 || finalRot === 270) ? unrotatedH : unrotatedW;
+                const vH = (finalRot === 90 || finalRot === 270) ? unrotatedW : unrotatedH;
+                return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: vW, vH: vH, offsetX: box.x, offsetY: box.y } };
             }
         }
 
+        // =========================================================
+        // 🧮 สมการชดเชยการหมุนและการ Offset Origin สำหรับไฟล์ทุกประเภท
+        // =========================================================
         function mapVisualToUnrotated(vx, vy, meta) {
             if (meta.baked) return { x: vx, y: vy, angleDeg: 0 };
             const r = ((meta.rotation % 360) + 360) % 360;
             const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
             const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
+            
             let ox, oy;
             if (r === 0) { ox = vx; oy = vy; }
             else if (r === 90) { ox = uW - vy; oy = vx; }
             else if (r === 180) { ox = uW - vx; oy = uH - vy; }
             else if (r === 270) { ox = vy; oy = uH - vx; }
+            
+            // บวกค่าระยะห่างจาก Origin (เผื่อไฟล์ CAD ตั้ง CropBox ไม่ตรงศูนย์)
+            ox += (meta.offsetX || 0);
+            oy += (meta.offsetY || 0);
+            
             return { x: ox, y: oy, angleDeg: r };
+        }
+
+        function mapUnrotatedToVisual(ox, oy, meta) {
+            if (meta.baked) return { x: ox, y: oy, angleDeg: 0 }; 
+            
+            // หักลบค่า Origin ของ CropBox ออกก่อน
+            let nox = ox - (meta.offsetX || 0);
+            let noy = oy - (meta.offsetY || 0);
+
+            const r = ((meta.rotation % 360) + 360) % 360;
+            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
+            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
+            
+            let vx, vy;
+            if (r === 0) { vx = nox; vy = noy; }
+            else if (r === 90) { vx = noy; vy = uW - nox; }
+            else if (r === 180) { vx = uW - nox; vy = uH - noy; }
+            else if (r === 270) { vx = uH - noy; vy = nox; }
+            
+            return { x: vx, y: vy, angleDeg: r };
         }
 
         async function saveOrganizerPDF() {
@@ -1120,19 +1151,6 @@
         // =========================================================
         // Other Tools (Redact, Highlight, Excel, Compare)
         // =========================================================
-        function mapUnrotatedToVisual(ox, oy, meta) {
-            if (meta.baked) return { x: ox, y: oy, angleDeg: 0 }; 
-            const r = ((meta.rotation % 360) + 360) % 360;
-            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
-            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-            let vx, vy;
-            if (r === 0) { vx = ox; vy = oy; }
-            else if (r === 90) { vx = oy; vy = uW - ox; }
-            else if (r === 180) { vx = uW - ox; vy = uH - oy; }
-            else if (r === 270) { vx = uH - oy; vy = ox; }
-            return { x: vx, y: vy, angleDeg: r };
-        }
-
         async function findKeywordBoxes(pd, needle) {
             const jsPage = await pd.pdfDocJs.getPage(pd.pageNumber);
             const textContent = await jsPage.getTextContent();
@@ -1642,8 +1660,11 @@
             mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
             for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
             
-            if (isMeasureClosed) mCtx.closePath();
-            else if (mouseX !== undefined && mouseY !== undefined) mCtx.lineTo(mouseX, mouseY);
+            if (isMeasureClosed) {
+                mCtx.closePath();
+            } else if (mouseX !== undefined && mouseY !== undefined) {
+                mCtx.lineTo(mouseX, mouseY);
+            }
             
             mCtx.strokeStyle = "#EF4444"; 
             mCtx.lineWidth = 3;
