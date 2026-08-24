@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งกลุ่มหน้ากระดาษได้อย่างแม่นยำ 100% ไม่มีหน้าซ้ำ หมุนตรงหน้า</p>
+                    <p class="text-slate-500 text-xs mt-0.5">คลิกเลือกหน้าได้อย่างลื่นไหล ไม่กระตุก | หมุนหน้าและ Export ตรงกัน 100%</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -310,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Safe Reorder Bug Fix)
+        // Core Logic (Organizer, Undo/Redo & Optimized Click Performance)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -462,7 +462,14 @@
                     renderGrid();
                 };
 
-                card.onclick = (e) => { if (e.target.tagName !== 'SELECT') handleCardClick(e, index); };
+                // 🚀 Optimized Click Handler (อัปเดตเฉพาะ CSS Class ทันที ไม่เรนเดอร์ Canvas ซ้ำ ป้องกันอาการรวนและสลับหน้า)
+                card.onclick = (e) => { 
+                    if (e.target.tagName !== 'SELECT') {
+                        handleCardClick(e, index);
+                        updateSelectionUI();
+                    }
+                };
+
                 const canvas = document.createElement('canvas'); canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-36 object-contain pointer-events-none';
                 card.appendChild(canvas);
                 const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
@@ -489,12 +496,40 @@
             } else if (event.ctrlKey || event.metaKey) {
                 selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); lastClickedIndex = index;
             } else { selectedIndices.clear(); selectedIndices.add(index); lastClickedIndex = index; }
-            renderGrid();
         }
 
-        function selectAll() { selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); renderGrid(); }
-        function rotateSelected(deg) { if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); saveState(); selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); renderGrid(); }
-        function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
+        function updateSelectionUI() {
+            const cards = gridContainer.children;
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                if (selectedIndices.has(i)) {
+                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
+                } else {
+                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
+                }
+            }
+            document.getElementById('page-counter').textContent = `ทั้งหมด: ${loadedPages.length} หน้า | เลือก: ${selectedIndices.size} หน้า`;
+        }
+
+        function selectAll() { 
+            selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); 
+            updateSelectionUI(); 
+        }
+
+        function rotateSelected(deg) { 
+            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); 
+            saveState(); 
+            selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); 
+            renderGrid(); 
+        }
+
+        function deleteSelected() { 
+            if (selectedIndices.size === 0) return; 
+            saveState(); 
+            loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); 
+            selectedIndices.clear(); lastClickedIndex = null; 
+            renderGrid(); 
+        }
 
         // =========================================================
         // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync)
@@ -502,9 +537,8 @@
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
             const origSize = copiedPage.getSize();
-            
-            // 🛠️ ใช้ค่า rotation ที่ผู้ใช้กำหนดใน Organizer เป็นหลัก (Absolute Override) เพื่อให้ตรงกับ Preview 100%
             const targetRot = pd.rotation || 0;
+
             copiedPage.setRotation(PDFLib.degrees(targetRot));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
