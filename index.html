@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Master Tools - Pro Engineering Web Edition</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- SheetJS for Excel Extraction -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -57,7 +54,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">จัดการการ์ดหน้ากระดาษ หรือเลือกเครื่องมือวิศวกรด้านล่าง</p>
+                    <p class="text-slate-500 text-xs mt-0.5">จัดการการ์ดหน้ากระดาษ หรือเลือกเครื่องมือด้านล่าง</p>
                 </div>
                 <div class="flex space-x-2">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -75,7 +72,7 @@
             </div>
             <div class="flex items-center space-x-2">
                 <button onclick="openSplitModal()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">✂️ แยกไฟล์ (Split)</button>
-                <button onclick="openSignModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">✍️ ประทับตรายาง</button>
+                <button onclick="openSignModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">✍️ ประทับตรายาง/เซ็น</button>
             </div>
         </div>
 
@@ -91,126 +88,155 @@
         <div class="mt-8 border-t pt-6">
             <h2 class="text-lg font-bold text-slate-800 mb-4">⚙️ ชุดเครื่องมือวิศวกรและพื้นฐาน (Engineering Tools)</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-xs text-slate-500">ลากเมาส์คำนวณสเกลแบบ Drawing</p></div>
-                    <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
+                    <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">🗺️ เปรียบเทียบแบบ</h4><p class="text-xs text-slate-500">ซ้อนทับไฟล์ P&ID แดง/น้ำเงิน</p></div>
-                    <button onclick="openCompareModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
+                    <button onclick="openCompareModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">🔍 ไฮไลต์คำอัตโนมัติ</h4><p class="text-xs text-slate-500">ค้นหา Keyword และป้ายสีเหลือง</p></div>
-                    <button onclick="toolAutoHighlight()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
+                    <button onclick="toolAutoHighlight()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์</h4><p class="text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
-                    <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
+                    <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">🔐 เข้ารหัสป้องกัน</h4><p class="text-xs text-slate-500">(ฟังก์ชันบนเว็บไม่รองรับ AES-256)</p></div>
-                    <button class="bg-slate-300 text-slate-500 text-xs font-bold px-3 py-2 rounded-lg cursor-not-allowed">ใช้ใน Python</button>
+                    <div><h4 class="font-bold text-sm text-slate-800">🔐 เข้ารหัสป้องกัน</h4><p class="text-xs text-slate-500">(ใช้ในเวอร์ชัน Python)</p></div>
+                    <button class="bg-slate-300 text-slate-500 text-xs font-bold px-3 py-2 rounded-lg cursor-not-allowed">Python</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-sm text-slate-800">📊 สกัดตาราง (Excel)</h4><p class="text-xs text-slate-500">ดึง Text ลงไฟล์ .xlsx (Web Ver.)</p></div>
-                    <button onclick="toolExtractExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
+                    <div><h4 class="font-bold text-sm text-slate-800">📊 สกัดตาราง (Excel)</h4><p class="text-xs text-slate-500">ดึงข้อความลงไฟล์ .xlsx</p></div>
+                    <button onclick="toolExtractExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-
             </div>
         </div>
     </main>
 
-    <!-- Modal: Measurement Tool -->
+    <!-- Modal: Split Tool -->
+    <div id="modal-split" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+            <h3 class="font-bold text-xl text-slate-800 mb-4">✂️ เลือกรูปแบบการแยกไฟล์ (Split PDF)</h3>
+            <div class="space-y-3 mb-6">
+                <button onclick="executeSplit('single')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
+                    <span class="block text-base mb-1">แยก "หน้าที่เลือก" ออกมาเป็น 1 ไฟล์</span>
+                    <span class="text-xs text-slate-400 font-normal">เหมาะสำหรับแยกเอกสารเฉพาะบางหน้าออกมาเซฟรวมกัน</span>
+                </button>
+                <button onclick="executeSplit('all')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
+                    <span class="block text-base mb-1">แยก "ทุกหน้า" ออกเป็นไฟล์ละ 1 หน้า</span>
+                    <span class="text-xs text-slate-400 font-normal">เหมาะสำหรับระเบิดเอกสารเล่มใหญ่ออกเป็นแผ่นๆ</span>
+                </button>
+                <button onclick="executeSplit('range')" class="w-full text-left bg-white hover:bg-blue-50 hover:text-blue-600 p-4 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm">
+                    <span class="block text-base mb-1">แยก "ตามช่วงหน้า" (Range)</span>
+                    <span class="text-xs text-slate-400 font-normal">กำหนดช่วงอิสระ เช่น 1-3; 5-9; 12</span>
+                </button>
+            </div>
+            <button onclick="document.getElementById('modal-split').classList.add('hidden')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl text-sm font-bold transition">ยกเลิก</button>
+        </div>
+    </div>
+
+    <!-- Modal: Sign & Stamp Tool -->
+    <div id="modal-sign" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col md:flex-row gap-6">
+            
+            <!-- Left: Settings -->
+            <div class="w-full md:w-1/2 flex flex-col">
+                <h3 class="font-bold text-xl text-slate-800 mb-4">✍️ ประทับตรายางและลายเซ็น</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-600 mb-2">1. เลือกรูปแบบ (Mode):</label>
+                    <div class="flex bg-slate-100 rounded-lg p-1">
+                        <button onclick="setSignMode('stamp')" id="tab-stamp" class="flex-1 py-1.5 text-sm font-bold bg-white shadow-sm rounded-md text-blue-600">ตรายาง</button>
+                        <button onclick="setSignMode('text')" id="tab-text" class="flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700">ข้อความ</button>
+                        <button onclick="setSignMode('image')" id="tab-image" class="flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700">รูปภาพ</button>
+                    </div>
+                </div>
+
+                <div id="input-stamp" class="mb-4">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">เลือกคำตรายาง:</label>
+                    <select id="sign-stamp-val" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500">
+                        <option value="APPROVED">APPROVED (อนุมัติ)</option>
+                        <option value="REJECTED">REJECTED (ไม่อนุมัติ)</option>
+                        <option value="DRAFT">DRAFT (ฉบับร่าง)</option>
+                        <option value="CONFIDENTIAL">CONFIDENTIAL (ลับ)</option>
+                        <option value="AS-BUILT">AS-BUILT (ตามแบบ)</option>
+                    </select>
+                </div>
+
+                <div id="input-text" class="mb-4 hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">พิมพ์ข้อความ (ภาษาอังกฤษ):</label>
+                    <input type="text" id="sign-text-val" placeholder="Type your name or text..." class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 outline-none focus:border-blue-500">
+                    <p class="text-[10px] text-orange-500 mt-1">* เวอร์ชันเว็บไซต์รองรับเฉพาะภาษาอังกฤษ สำหรับภาษาไทยโปรดใช้ฝั่ง Python</p>
+                </div>
+
+                <div id="input-image" class="mb-4 hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">อัปโหลดรูปภาพลายเซ็น (PNG/JPG):</label>
+                    <input type="file" id="sign-image-val" accept="image/png, image/jpeg" class="w-full border rounded-lg p-2 text-sm bg-slate-50">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">สี (Color):</label>
+                        <select id="sign-color" class="w-full border rounded-lg p-2 text-sm bg-slate-50 outline-none">
+                            <option value="black">⚫ สีดำ (Black)</option>
+                            <option value="red">🔴 สีแดง (Red)</option>
+                            <option value="blue">🔵 สีน้ำเงิน (Blue)</option>
+                            <option value="green">🟢 สีเขียว (Green)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">ขนาด (Scale %):</label>
+                        <input type="number" id="sign-scale" value="100" min="50" max="400" class="w-full border rounded-lg p-2 text-sm bg-slate-50 outline-none">
+                    </div>
+                </div>
+
+                <div class="mb-6 flex items-center">
+                    <input type="checkbox" id="sign-date" class="w-4 h-4 text-blue-600 rounded border-slate-300 mr-2">
+                    <label for="sign-date" class="text-sm font-bold text-slate-700">ประทับวันที่และเวลา (Timestamp)</label>
+                </div>
+
+                <div class="mt-auto flex space-x-2">
+                    <button onclick="executeSignAndStamp()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">✅ บันทึก (ลงในหน้าที่เลือก)</button>
+                    <button onclick="document.getElementById('modal-sign').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-xl text-sm font-bold transition">ยกเลิก</button>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Preview -->
+            <div class="w-full md:w-1/2 flex flex-col bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative">
+                <div class="bg-slate-200 p-2 text-center border-b border-slate-300">
+                    <span class="text-xs font-bold text-slate-600">🔍 พรีวิว: คลิกลากเป้า 🔴 บนกระดาษเพื่อตั้งตำแหน่ง</span>
+                </div>
+                <div class="flex-1 relative overflow-auto flex items-center justify-center p-4 bg-slate-100" id="sign-preview-container">
+                    <div class="relative inline-block shadow-md">
+                        <canvas id="sign-preview-canvas" class="block bg-white max-h-[50vh] object-contain cursor-crosshair"></canvas>
+                        <!-- เป้าจำลองตำแหน่ง -->
+                        <div id="sign-target" class="absolute w-6 h-6 border-2 border-red-500 rounded-full bg-red-500/30 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all" style="top: 80%; left: 80%;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals for Measure and Compare (Hidden from previous code) -->
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง (Measurement Tool)</h3>
-                <button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 hover:text-red-500 font-bold text-xl">✖</button>
-            </div>
-            <div class="flex space-x-4 mb-4">
-                <input type="file" id="measure-file" accept="application/pdf" class="text-sm border p-1.5 rounded-lg w-1/3">
-                <div class="flex items-center space-x-2">
-                    <label class="text-sm font-bold">สเกล 1:</label>
-                    <input type="number" id="measure-scale" value="100" class="border rounded-lg p-1.5 w-20 text-center text-sm">
-                </div>
-                <div class="flex-1 text-right">
-                    <span class="text-2xl font-bold text-emerald-600" id="measure-result">ระยะทาง: 0.000 ม.</span>
-                </div>
-            </div>
-            <div class="flex-1 bg-slate-200 rounded-xl overflow-auto relative cursor-crosshair border" id="measure-container">
-                <canvas id="measure-canvas" class="block mx-auto"></canvas>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 text-center">💡 โหลดไฟล์ Drawing แล้วใช้เมาส์คลิกลากบนหน้ากระดาษเพื่อวัดระยะทาง</p>
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง</h3><button onclick="document.getElementById('modal-measure').classList.add('hidden')" class="text-slate-400 font-bold">✖</button></div>
+            <div class="flex space-x-4 mb-4"><input type="file" id="measure-file" class="border p-1 text-sm rounded w-1/3"><input type="number" id="measure-scale" value="100" class="border p-1 text-sm rounded w-20"><span class="text-2xl font-bold text-emerald-600 ml-auto" id="measure-result">0.000 ม.</span></div>
+            <div class="flex-1 bg-slate-200 rounded overflow-auto relative cursor-crosshair border"><canvas id="measure-canvas" class="block mx-auto"></canvas></div>
         </div>
     </div>
-
-    <!-- Modal: Compare Tool -->
     <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg">
-            <h3 class="font-bold text-xl text-slate-800 mb-4">🗺️ เปรียบเทียบแบบ (Drawing Compare)</h3>
-            <p class="text-sm text-slate-500 mb-4">อัปโหลดไฟล์เก่าและใหม่ ระบบจะแสดงส่วนที่ถูกลบเป็น <span class="text-red-500 font-bold">สีแดง</span> และส่วนที่เพิ่มมาเป็น <span class="text-blue-500 font-bold">สีน้ำเงิน</span></p>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">1. ไฟล์แบบเก่า (Old Rev - แดง):</label>
-                    <input type="file" id="compare-old" accept="application/pdf" class="w-full text-sm border p-2 rounded-lg bg-slate-50">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">2. ไฟล์แบบใหม่ (New Rev - น้ำเงิน):</label>
-                    <input type="file" id="compare-new" accept="application/pdf" class="w-full text-sm border p-2 rounded-lg bg-slate-50">
-                </div>
-            </div>
-
-            <div class="mt-6 flex space-x-2">
-                <button onclick="executeCompare()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-bold transition">เริ่มเปรียบเทียบ (ดาวน์โหลด)</button>
-                <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold transition">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals: Split & Sign -->
-    <div id="modal-split" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-96">
-            <h3 class="font-bold text-lg text-slate-800 mb-4">✂️ เลือกรูปแบบการแยกไฟล์</h3>
-            <div class="space-y-3">
-                <button onclick="executeSplit('single')" class="w-full text-left bg-slate-50 hover:bg-blue-50 hover:text-blue-600 p-3 rounded-xl text-sm font-semibold transition border">แยกหน้าที่เลือกเป็น 1 ไฟล์ใหม่</button>
-                <button onclick="executeSplit('all')" class="w-full text-left bg-slate-50 hover:bg-blue-50 hover:text-blue-600 p-3 rounded-xl text-sm font-semibold transition border">แยกทุกหน้าออกเป็นไฟล์ละ 1 หน้า</button>
-            </div>
-            <button onclick="document.getElementById('modal-split').classList.add('hidden')" class="mt-5 w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl text-sm font-bold">ยกเลิก</button>
-        </div>
-    </div>
-
-    <div id="modal-sign" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-96">
-            <h3 class="font-bold text-lg text-slate-800 mb-4">✍️ ประทับตรายางสำเร็จรูป</h3>
-            <label class="block text-xs font-bold text-slate-500 mb-1">เลือกข้อความตรายาง:</label>
-            <select id="stamp-select" class="w-full border rounded-xl p-2.5 text-sm mb-4 bg-slate-50 font-semibold">
-                <option value="APPROVED">APPROVED (อนุมัติ)</option>
-                <option value="REJECTED">REJECTED (ไม่อนุมัติ)</option>
-                <option value="DRAFT">DRAFT (ฉบับร่าง)</option>
-                <option value="CONFIDENTIAL">CONFIDENTIAL (ลับ)</option>
-                <option value="AS-BUILT">AS-BUILT (ตามแบบก่อสร้าง)</option>
-            </select>
-            <div class="flex space-x-2">
-                <button onclick="executeStamp()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold">ยืนยันประทับทุกหน้า</button>
-                <button onclick="document.getElementById('modal-sign').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold">ยกเลิก</button>
-            </div>
-        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg"><h3 class="font-bold text-xl mb-4">🗺️ เปรียบเทียบแบบ</h3><input type="file" id="compare-old" class="w-full mb-2 border p-2 text-sm"><input type="file" id="compare-new" class="w-full mb-4 border p-2 text-sm"><button onclick="executeCompare()" class="w-full bg-teal-600 text-white py-2 rounded-xl font-bold">เริ่มเปรียบเทียบ</button><button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="w-full mt-2 bg-slate-200 py-2 rounded-xl font-bold">ยกเลิก</button></div>
     </div>
 
     <!-- Loading Overlay -->
     <div id="loading" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
         <div class="bg-white p-6 rounded-2xl shadow-xl flex items-center space-x-4">
-            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             <span id="loading-text" class="font-bold text-slate-700 text-lg">กำลังประมวลผล...</span>
         </div>
     </div>
@@ -225,10 +251,7 @@
         let lastClickedIndex = null;
         let draggedIndex = null;
 
-        const STANDARD_SIZES = {
-            "Original": null, "A0": [2384, 3370], "A1": [1684, 2384], "A2": [1191, 1684],
-            "A4": [595, 842], "A3": [842, 1191], "Letter": [612, 792]
-        };
+        const STANDARD_SIZES = { "Original": null, "A0": [2384, 3370], "A1": [1684, 2384], "A2": [1191, 1684], "A4": [595, 842], "A3": [842, 1191], "Letter": [612, 792] };
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -250,11 +273,11 @@
             try {
                 for (let file of validFiles) {
                     const arrayBuffer = await file.arrayBuffer();
-                    const pdfDocLib = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const fileBytes = new Uint8Array(arrayBuffer); 
                     const sourceIdx = sourcePdfDocs.length;
-                    sourcePdfDocs.push({ pdfDocLib, arrayBuffer });
+                    sourcePdfDocs.push({ fileBytes }); 
 
-                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const loadingTask = pdfjsLib.getDocument({ data: fileBytes.slice(0) });
                     const pdfDocJs = await loadingTask.promise;
 
                     for (let i = 1; i <= pdfDocJs.numPages; i++) {
@@ -267,8 +290,7 @@
                 document.getElementById('btn-save').classList.remove('hidden');
                 dropZone.classList.add('border-emerald-500', 'bg-emerald-50');
                 renderGrid();
-            } catch (err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); } 
-            finally { hideLoading(); }
+            } catch (err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); } finally { hideLoading(); }
         }
 
         async function renderGrid() {
@@ -345,13 +367,11 @@
             selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i));
             renderGrid();
         }
-
         function rotateSelected(deg) {
             if (selectedIndices.size === 0) return alert("เลือกหน้าที่ต้องการหมุน");
             selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360);
             renderGrid();
         }
-
         function deleteSelected() {
             if (selectedIndices.size === 0) return;
             loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx));
@@ -366,7 +386,7 @@
                 const { PDFDocument } = PDFLib;
                 const newPdf = await PDFDocument.create();
                 const cache = {};
-                for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
+                for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
                 for (let pd of loadedPages) {
                     const [copiedPage] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
@@ -379,59 +399,206 @@
         }
 
         // =========================================================
-        // โค้ดส่วน Tools ย่อย (Split, Stamp, Redact, Highlight)
+        // ✂️ โค้ดส่วนแยกไฟล์ (Split Tool - เพิ่มระบบหั่นตามช่วง)
         // =========================================================
-        function openSplitModal() { document.getElementById('modal-split').classList.remove('hidden'); }
-        function openSignModal() { document.getElementById('modal-sign').classList.remove('hidden'); }
+        function openSplitModal() { 
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+            document.getElementById('modal-split').classList.remove('hidden'); 
+        }
 
         async function executeSplit(mode) {
             document.getElementById('modal-split').classList.add('hidden');
-            showLoading("กำลังแยกไฟล์...");
+            
+            let rangesToExtract = []; // Array of {start, end}
+
+            if (mode === 'single') {
+                if (selectedIndices.size === 0) return alert("กรุณาเลือกหน้าที่จะแยกในตารางก่อนครับ");
+                const sorted = Array.from(selectedIndices).sort((a,b)=>a-b);
+                rangesToExtract.push({ pages: sorted, filename: "Extracted_Selected_Pages.pdf" });
+            } 
+            else if (mode === 'all') {
+                for (let i = 0; i < loadedPages.length; i++) {
+                    rangesToExtract.push({ pages: [i], filename: `Split_Page_${i+1}.pdf` });
+                }
+            } 
+            else if (mode === 'range') {
+                const input = prompt("ระบุช่วงหน้าที่ต้องการแยก (คั่นด้วย ;)\nเช่น: 1-3; 5-7; 10");
+                if (!input) return;
+                const parts = input.split(';');
+                
+                let rangeGroup = [];
+                for (let part of parts) {
+                    part = part.trim();
+                    if (!part) continue;
+                    if (part.includes('-')) {
+                        let [s, e] = part.split('-');
+                        let startIdx = Math.max(0, parseInt(s) - 1);
+                        let endIdx = Math.min(loadedPages.length - 1, parseInt(e) - 1);
+                        if (!isNaN(startIdx) && !isNaN(endIdx)) {
+                            for(let i=startIdx; i<=endIdx; i++) rangeGroup.push(i);
+                        }
+                    } else {
+                        let idx = parseInt(part) - 1;
+                        if (!isNaN(idx) && idx >= 0 && idx < loadedPages.length) rangeGroup.push(idx);
+                    }
+                }
+                if (rangeGroup.length === 0) return alert("รูปแบบช่วงหน้าไม่ถูกต้องครับ");
+                rangesToExtract.push({ pages: rangeGroup, filename: "Extracted_Ranged_Pages.pdf" });
+            }
+
+            showLoading("กำลังหั่นและแยกไฟล์...");
             try {
                 const { PDFDocument } = PDFLib;
                 const cache = {};
-                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
+                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
-                if (mode === 'single' && selectedIndices.size > 0) {
+                // Process each extraction request
+                for (let task of rangesToExtract) {
                     const newPdf = await PDFDocument.create();
-                    for (let idx of Array.from(selectedIndices).sort((a,b)=>a-b)) {
+                    for (let idx of task.pages) {
                         const pd = loadedPages[idx];
                         const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
                         newPdf.addPage(p);
                     }
-                    downloadFile(await newPdf.save(), "Extracted_Pages.pdf");
-                } else if (mode === 'all') {
-                    for (let i = 0; i < loadedPages.length; i++) {
-                        const newPdf = await PDFDocument.create();
-                        const pd = loadedPages[i];
-                        const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
-                        newPdf.addPage(p);
-                        downloadFile(await newPdf.save(), `Split_Page_${i+1}.pdf`);
-                    }
+                    downloadFile(await newPdf.save(), task.filename);
+                    // Add slight delay for multiple downloads to avoid browser block
+                    await new Promise(r => setTimeout(r, 300)); 
                 }
-            } catch(e) {} finally { hideLoading(); }
+            } catch(e) { console.error(e); alert("ข้อผิดพลาดในการแยกไฟล์"); } 
+            finally { hideLoading(); }
         }
 
-        async function executeStamp() {
-            const text = document.getElementById('stamp-select').value;
+        // =========================================================
+        // ✍️ โค้ดส่วนลายเซ็น (Advanced Sign & Stamp Tool)
+        // =========================================================
+        let signRelX = 0.8;
+        let signRelY = 0.8;
+        let signMode = 'stamp';
+        let previewCanvas = document.getElementById('sign-preview-canvas');
+
+        function openSignModal() {
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+            document.getElementById('modal-sign').classList.remove('hidden');
+            renderSignPreview();
+        }
+
+        function setSignMode(mode) {
+            signMode = mode;
+            ['stamp', 'text', 'image'].forEach(m => {
+                document.getElementById(`input-${m}`).classList.add('hidden');
+                document.getElementById(`tab-${m}`).className = 'flex-1 py-1.5 text-sm font-bold text-slate-500 hover:text-slate-700';
+            });
+            document.getElementById(`input-${mode}`).classList.remove('hidden');
+            document.getElementById(`tab-${mode}`).className = 'flex-1 py-1.5 text-sm font-bold bg-white shadow-sm rounded-md text-blue-600';
+        }
+
+        // Render Preview & Handle Click Positioning
+        async function renderSignPreview() {
+            // ใช้หน้ากระดาษแรกที่ผู้ใช้เลือก (หรือหน้า 1 ถ้าไม่ได้เลือก)
+            const targetIndex = selectedIndices.size > 0 ? Array.from(selectedIndices)[0] : 0;
+            const pd = loadedPages[targetIndex];
+            
+            const page = await pd.pdfDocJs.getPage(pd.pageNumber);
+            const viewport = page.getViewport({ scale: 0.5, rotation: pd.rotation });
+            previewCanvas.height = viewport.height;
+            previewCanvas.width = viewport.width;
+            await page.render({ canvasContext: previewCanvas.getContext('2d'), viewport: viewport }).promise;
+
+            updateTargetPos();
+        }
+
+        previewCanvas.addEventListener('mousedown', (e) => {
+            const rect = previewCanvas.getBoundingClientRect();
+            signRelX = (e.clientX - rect.left) / rect.width;
+            signRelY = (e.clientY - rect.top) / rect.height;
+            updateTargetPos();
+        });
+
+        function updateTargetPos() {
+            const targetBox = document.getElementById('sign-target');
+            targetBox.style.left = `${signRelX * 100}%`;
+            targetBox.style.top = `${signRelY * 100}%`;
+        }
+
+        async function executeSignAndStamp() {
+            if (selectedIndices.size === 0) return alert("กรุณาเลือกหน้าที่จะประทับตราในตารางก่อนครับ");
             document.getElementById('modal-sign').classList.add('hidden');
-            showLoading("กำลังประทับตรายาง...");
+            showLoading("กำลังประทับและบันทึก...");
+
+            const scaleVal = parseFloat(document.getElementById('sign-scale').value) / 100.0;
+            const colorName = document.getElementById('sign-color').value;
+            const addDate = document.getElementById('sign-date').checked;
+            
+            let colorRGB;
+            const { rgb } = PDFLib;
+            if (colorName === 'red') colorRGB = rgb(0.8, 0, 0);
+            else if (colorName === 'blue') colorRGB = rgb(0, 0, 0.8);
+            else if (colorName === 'green') colorRGB = rgb(0, 0.5, 0);
+            else colorRGB = rgb(0, 0, 0); // black
+
             try {
-                const { PDFDocument, rgb } = PDFLib;
+                const { PDFDocument } = PDFLib;
                 const newPdf = await PDFDocument.create();
                 const cache = {};
-                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
+                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
-                for (let pd of loadedPages) {
+                // Prepare Image if mode is image
+                let embedImg = null;
+                let imgDims = null;
+                if (signMode === 'image') {
+                    const fileInput = document.getElementById('sign-image-val').files[0];
+                    if (!fileInput) throw new Error("Please upload an image first");
+                    const imgBytes = new Uint8Array(await fileInput.arrayBuffer());
+                    if (fileInput.type === 'image/png') embedImg = await newPdf.embedPng(imgBytes);
+                    else embedImg = await newPdf.embedJpg(imgBytes);
+                    imgDims = embedImg.scale(scaleVal);
+                }
+
+                const font = await newPdf.embedFont(PDFLib.StandardFonts.HelveticaBold);
+                const timestamp = new Date().toLocaleString('th-TH');
+
+                // Process Selected Pages
+                for (let idx of Array.from(selectedIndices).sort((a,b)=>a-b)) {
+                    const pd = loadedPages[idx];
                     const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
+                    
                     const { width, height } = p.getSize();
-                    p.drawText(`[ ${text} ]`, { x: width - 180, y: height - 50, size: 20, color: rgb(0.8, 0, 0) });
+                    // Calculate absolute X, Y (pdf-lib Y is from bottom, so invert RelY)
+                    const drawX = width * signRelX;
+                    const drawY = height * (1 - signRelY);
+
+                    if (signMode === 'stamp') {
+                        const stampText = document.getElementById('sign-stamp-val').value;
+                        const fontSize = 24 * scaleVal;
+                        p.drawRectangle({
+                            x: drawX - (80 * scaleVal), y: drawY - (20 * scaleVal),
+                            width: 160 * scaleVal, height: 40 * scaleVal,
+                            borderColor: colorRGB, borderWidth: 3 * scaleVal
+                        });
+                        p.drawText(stampText, { x: drawX - (65 * scaleVal), y: drawY - (5 * scaleVal), size: fontSize, font: font, color: colorRGB });
+                        if (addDate) p.drawText(timestamp, { x: drawX - (65 * scaleVal), y: drawY - (35 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                    } 
+                    else if (signMode === 'text') {
+                        const text = document.getElementById('sign-text-val').value || "Signed";
+                        const fontSize = 16 * scaleVal;
+                        p.drawText(text, { x: drawX, y: drawY, size: fontSize, font: font, color: colorRGB });
+                        if (addDate) p.drawText(timestamp, { x: drawX, y: drawY - (15 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                    }
+                    else if (signMode === 'image' && embedImg) {
+                        p.drawImage(embedImg, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2), width: imgDims.width, height: imgDims.height });
+                        if (addDate) p.drawText(timestamp, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2) - (15 * scaleVal), size: 10 * scaleVal, color: colorRGB });
+                    }
+
                     newPdf.addPage(p);
                 }
-                downloadFile(await newPdf.save(), "Stamped_Document.pdf");
-            } catch(e) {} finally { hideLoading(); }
+                downloadFile(await newPdf.save(), "Signed_Document.pdf");
+            } catch(e) { console.error(e); alert("ข้อผิดพลาด: " + e.message); } 
+            finally { hideLoading(); }
         }
 
+        // =========================================================
+        // Tools ย่อยอื่นๆ (Redact, Highlight, Excel, Compare)
+        // =========================================================
         async function toolRedaction() {
             if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
             const keyword = prompt("พิมพ์ข้อความที่ต้องการเซ็นเซอร์:");
@@ -441,7 +608,7 @@
                 const { PDFDocument, rgb } = PDFLib;
                 const newPdf = await PDFDocument.create();
                 const cache = {};
-                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
+                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
                 for (let pd of loadedPages) {
                     const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
@@ -461,7 +628,7 @@
                 const { PDFDocument, rgb } = PDFLib;
                 const newPdf = await PDFDocument.create();
                 const cache = {};
-                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
+                for (let i=0; i<sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
 
                 for (let pd of loadedPages) {
                     const [p] = await newPdf.copyPages(cache[pd.sourceIdx], [pd.pageIndex]);
@@ -487,98 +654,29 @@
                 const ws = XLSX.utils.aoa_to_sheet(ws_data);
                 XLSX.utils.book_append_sheet(wb, ws, "Extracted");
                 XLSX.writeFile(wb, "Extracted_Tables.xlsx");
-            } catch(e) { console.error(e); alert("ข้อผิดพลาดในการดึงข้อมูล"); } finally { hideLoading(); }
+            } catch(e) { console.error(e); alert("ข้อผิดพลาด"); } finally { hideLoading(); }
         }
-
-        // =========================================================
-        // 📏 เครื่องมือวัดระยะ (Measurement Tool on Canvas)
-        // =========================================================
-        let measurePdfDocJs = null;
-        let measureScale = 1.0;
-        let isDrawing = false;
-        let mStartX = 0, mStartY = 0;
-        let mCanvas = document.getElementById('measure-canvas');
-        let mCtx = mCanvas.getContext('2d');
-        let mImgData = null;
 
         function openMeasureModal() { document.getElementById('modal-measure').classList.remove('hidden'); }
-        
-        document.getElementById('measure-file').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const arrayBuffer = await file.arrayBuffer();
-            measurePdfDocJs = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            renderMeasureCanvas();
-        });
-
-        async function renderMeasureCanvas() {
-            if (!measurePdfDocJs) return;
-            const page = await measurePdfDocJs.getPage(1);
-            const viewport = page.getViewport({ scale: 1.5 });
-            measureScale = 1.5;
-            mCanvas.width = viewport.width;
-            mCanvas.height = viewport.height;
-            await page.render({ canvasContext: mCtx, viewport: viewport }).promise;
-            mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
-        }
-
-        mCanvas.addEventListener('mousedown', (e) => {
-            if (!mImgData) return;
-            isDrawing = true;
-            const rect = mCanvas.getBoundingClientRect();
-            mStartX = (e.clientX - rect.left) * (mCanvas.width / rect.width);
-            mStartY = (e.clientY - rect.top) * (mCanvas.height / rect.height);
-        });
-
-        mCanvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
-            mCtx.putImageData(mImgData, 0, 0); // รีเฟรชภาพเดิม
-            const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width);
-            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
-            mCtx.beginPath(); mCtx.moveTo(mStartX, mStartY); mCtx.lineTo(x, y);
-            mCtx.strokeStyle = "red"; mCtx.lineWidth = 3; mCtx.stroke();
-        });
-
-        mCanvas.addEventListener('mouseup', (e) => {
-            if (!isDrawing) return;
-            isDrawing = false;
-            const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width);
-            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
-            
-            const px_dist = Math.hypot(x - mStartX, y - mStartY);
-            const pdf_pts = px_dist / measureScale;
-            const mm_on_paper = (pdf_pts / 72.0) * 25.4;
-            const userScale = parseFloat(document.getElementById('measure-scale').value) || 100;
-            const real_m = (mm_on_paper * userScale) / 1000.0;
-            
-            document.getElementById('measure-result').textContent = `ระยะทาง: ${real_m.toFixed(3)} ม.`;
-        });
-
-        // =========================================================
-        // 🗺️ เปรียบเทียบแบบ (Compare Pixel Overlay)
-        // =========================================================
         function openCompareModal() { document.getElementById('modal-compare').classList.remove('hidden'); }
-
+        
         async function executeCompare() {
             const oldFile = document.getElementById('compare-old').files[0];
             const newFile = document.getElementById('compare-new').files[0];
             if (!oldFile || !newFile) return alert("กรุณาเลือกไฟล์ให้ครบทั้ง 2 ช่อง");
 
             document.getElementById('modal-compare').classList.add('hidden');
-            showLoading("กำลังวิเคราะห์และซ้อนทับพิกเซลแบบ Drawing...");
+            showLoading("ซ้อนทับพิกเซลแบบ Drawing...");
 
             try {
-                const oldDocJs = await pdfjsLib.getDocument({ data: await oldFile.arrayBuffer() }).promise;
-                const newDocJs = await pdfjsLib.getDocument({ data: await newFile.arrayBuffer() }).promise;
-                
+                const oldBytes = new Uint8Array(await oldFile.arrayBuffer());
+                const newBytes = new Uint8Array(await newFile.arrayBuffer());
+                const oldDocJs = await pdfjsLib.getDocument({ data: oldBytes.slice(0) }).promise;
+                const newDocJs = await pdfjsLib.getDocument({ data: newBytes.slice(0) }).promise;
                 const { PDFDocument } = PDFLib;
                 const diffPdf = await PDFDocument.create();
-
-                const totalPages = Math.min(oldDocJs.numPages, newDocJs.numPages);
                 
-                for (let i = 1; i <= 1; i++) { // Demo ทำเฉพาะหน้า 1 บนเว็บเพื่อประหยัด RAM
+                for (let i = 1; i <= 1; i++) { 
                     const p1 = await oldDocJs.getPage(i);
                     const p2 = await newDocJs.getPage(i);
                     const v1 = p1.getViewport({ scale: 2.0 });
@@ -595,14 +693,13 @@
                     const c3 = document.createElement('canvas'); c3.width = v1.width; c3.height = v1.height;
                     const ctx3 = c3.getContext('2d'); const d3 = ctx3.createImageData(c3.width, c3.height);
 
-                    // Multiply Blend (Red = Old, Blue = New)
                     for (let j = 0; j < d1.length; j += 4) {
                         const g1 = (d1[j] + d1[j+1] + d1[j+2]) / 3;
                         const g2 = (d2[j] + d2[j+1] + d2[j+2]) / 3;
-                        d3.data[j] = Math.min(255, (255 * g2) / 255);       // Red channel
-                        d3.data[j+1] = Math.min(255, (g1 * g2) / 255);     // Green
-                        d3.data[j+2] = Math.min(255, (g1 * 255) / 255);    // Blue
-                        d3.data[j+3] = 255;                                // Alpha
+                        d3.data[j] = Math.min(255, (255 * g2) / 255);       
+                        d3.data[j+1] = Math.min(255, (g1 * g2) / 255);     
+                        d3.data[j+2] = Math.min(255, (g1 * 255) / 255);    
+                        d3.data[j+3] = 255;                                
                     }
                     ctx3.putImageData(d3, 0, 0);
                     
@@ -612,10 +709,8 @@
                     const page = diffPdf.addPage([v1.width, v1.height]);
                     page.drawImage(jpgImage, { x: 0, y: 0, width: v1.width, height: v1.height });
                 }
-
-                downloadFile(await diffPdf.save(), "Compare_Diff_Result.pdf");
-            } catch(e) { console.error(e); alert("ข้อผิดพลาดทางหน่วยความจำขณะเปรียบเทียบ"); }
-            finally { hideLoading(); }
+                downloadFile(await diffPdf.save(), "Compare_Result.pdf");
+            } catch(e) { console.error(e); } finally { hideLoading(); }
         }
 
         // =========================================================
