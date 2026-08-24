@@ -152,7 +152,7 @@
             <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">⚙️ เครื่องมือวิศวกร (Engineering Tools)</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-[10px] sm:text-xs text-slate-500">สเกล + Zoom เข้าออกได้</p></div>
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-[10px] sm:text-xs text-slate-500">สเกล, Shift(Ortho), Zoom 2 นิ้ว</p></div>
                     <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -315,7 +315,7 @@
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
         <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-xl w-full max-w-6xl flex flex-col h-[95vh] sm:h-[90vh]">
             <div class="flex justify-between items-center mb-2 sm:mb-4">
-                <h3 class="font-bold text-base sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะ & พื้นที่ (Zoom Supported)</h3>
+                <h3 class="font-bold text-base sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะ & พื้นที่ (Pro Edition)</h3>
                 <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl">✖</button>
             </div>
             
@@ -356,9 +356,12 @@
 
             <!-- กล่องแสดงผลลัพธ์ -->
             <div class="flex justify-between items-center bg-emerald-50 border border-emerald-200 p-2 sm:p-3 rounded-lg mb-2 sm:mb-3 shadow-sm">
-                <span class="text-[10px] sm:text-xs text-slate-600 font-bold">💡 กด Ctrl+Scroll เพื่อซูมด้วยเมาส์ | แตะจุดเริ่มต้นเพื่อคำนวณพื้นที่</span>
+                <span class="text-[10px] sm:text-xs text-slate-600 font-bold">
+                    <span class="hidden sm:inline">💡 กด Shift ค้างตอนลาก = ล็อกแกน (Ortho) | </span>
+                    ใช้ 2 นิ้ว "ถ่าง-หุบ" เพื่อซูมบนมือถือ
+                </span>
                 <div class="text-right flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
-                    <div class="text-sm sm:text-xl font-bold text-emerald-600 leading-none" id="measure-result-dist">ระยะ: 0.000 ม.</div>
+                    <div class="text-sm sm:text-xl font-bold text-emerald-600 leading-none" id="measure-result-dist">ระยะรวม: 0.000 ม.</div>
                     <div class="text-xs sm:text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: -</div>
                 </div>
             </div>
@@ -392,7 +395,7 @@
                 <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition">✖</button>
             </div>
             <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-start sm:items-center justify-center p-2 sm:p-4 shadow-inner relative">
-                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full m-auto"></canvas>
+                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-none m-auto"></canvas>
             </div>
             <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold text-center">
                 💡 สามารถใช้ลูกกลิ้งเมาส์ไถเลื่อนหน้าจอเพื่อดูรายละเอียดได้
@@ -1259,7 +1262,7 @@
         }
 
         // =========================================================
-        // 📏 Measure Tool Logic (Zoom & Pan Support)
+        // 📏 Measure Tool Logic (Pro Edition: Zoom, Pan, Ortho, Dimensions)
         // =========================================================
         const MEASURE_RENDER_SCALE = 2.0; // Render ชัด 2 เท่า
         let measurePdfDocJs = null; 
@@ -1272,16 +1275,20 @@
         let mDisplayZoom = 1.0; 
         let measureMode = 'pan'; // pan หรือ draw
         
-        // Panning Variables (for PC mouse drag)
+        // Panning & Pinch Variables
         let isPanning = false;
         let panStartX = 0;
         let panStartY = 0;
         let panScrollLeft = 0;
         let panScrollTop = 0;
 
+        let isPinching = false;
+        let initialPinchDist = 0;
+        let initialPinchZoom = 1.0;
+
         function openMeasureModal() { 
             document.getElementById('modal-measure').classList.remove('hidden'); 
-            setMeasureMode('pan'); // เริ่มต้นด้วยโหมดเลื่อน
+            setMeasureMode('pan'); 
         }
 
         function setMeasureMode(mode) {
@@ -1300,7 +1307,6 @@
         function applyMeasureZoom(zoom) {
             mDisplayZoom = zoom;
             document.getElementById('measure-zoom-text').textContent = Math.round(mDisplayZoom * 100) + '%';
-            // ปรับขนาดความกว้างที่แสดงผล โดยอิงจากขนาดภาพจริงๆ 
             mCanvas.style.width = (mCanvas.width / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
             mCanvas.style.height = (mCanvas.height / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
         }
@@ -1360,7 +1366,7 @@
             mCanvas.width = viewport.width; 
             mCanvas.height = viewport.height;
             
-            applyMeasureZoom(mDisplayZoom); // ควบคุมขนาดที่แสดง
+            applyMeasureZoom(mDisplayZoom);
 
             await page.render({ canvasContext: mCtx, viewport: viewport }).promise;
             mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
@@ -1374,16 +1380,28 @@
         }
 
         function pxToRealMeters(px) {
-            // คำนวณจาก px ดั้งเดิมที่ Render ไว้ (MEASURE_RENDER_SCALE)
             const pdf_pts = px / MEASURE_RENDER_SCALE; 
             const mm_on_paper = (pdf_pts / 72.0) * 25.4;
             const userScale = parseFloat(document.getElementById('measure-scale').value) || 100; 
             return (mm_on_paper * userScale) / 1000.0;
         }
 
+        function getOrthoPoint(p1, p2) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            // Lock to 0, 45, 90 degrees...
+            const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+            const dist = Math.hypot(dx, dy);
+            return {
+                x: p1.x + dist * Math.cos(snappedAngle),
+                y: p1.y + dist * Math.sin(snappedAngle)
+            };
+        }
+
         function updateMeasureResult() {
             if (measurePoints.length === 0) {
-                document.getElementById('measure-result-dist').textContent = `ระยะ: 0.000 ม.`;
+                document.getElementById('measure-result-dist').textContent = `ระยะรวม: 0.000 ม.`;
                 document.getElementById('measure-result-area').textContent = `พื้นที่: -`;
                 return;
             }
@@ -1397,7 +1415,7 @@
             }
             
             const realDistMeters = pxToRealMeters(totalPxDist);
-            document.getElementById('measure-result-dist').textContent = `ระยะ: ${realDistMeters.toFixed(3)} ม.`;
+            document.getElementById('measure-result-dist').textContent = `ระยะรวม: ${realDistMeters.toFixed(3)} ม.`;
 
             if (isMeasureClosed && measurePoints.length > 2) {
                 let areaPx = 0;
@@ -1415,14 +1433,20 @@
             }
         }
 
-        function handleMeasurePointerEvent(clientX, clientY) {
+        function handleMeasurePointerEvent(clientX, clientY, isShift) {
             if (!mImgData || isMeasureClosed) return;
             const rect = mCanvas.getBoundingClientRect();
             if(!clientX || !clientY) return;
 
-            // คืนค่าพิกัดให้เป็นสเกลดั้งเดิมของ Canvas เสมอ แม้ซูมอยู่
-            const x = (clientX - rect.left) * (mCanvas.width / rect.width); 
-            const y = (clientY - rect.top) * (mCanvas.height / rect.height);
+            let x = (clientX - rect.left) * (mCanvas.width / rect.width); 
+            let y = (clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            // ใช้ Ortho (ลากเส้นตรง 45/90 องศา) ถ้ากด Shift ค้าง
+            if (isShift && measurePoints.length > 0) {
+                const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                x = orthoPt.x; 
+                y = orthoPt.y;
+            }
             
             if (measurePoints.length > 2) {
                 const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
@@ -1472,27 +1496,80 @@
 
         mCanvas.addEventListener('click', (e) => {
             if (measureMode === 'pan') return; 
-            handleMeasurePointerEvent(e.clientX, e.clientY);
+            handleMeasurePointerEvent(e.clientX, e.clientY, e.shiftKey);
         });
 
-        // ============ Touch (Mobile) Drawing ============
+        // ============ Touch (Mobile) Pinch Zoom & Drawing ============
         mCanvas.addEventListener('touchstart', (e) => { 
-            // ถ้าเป็นโหมดเลื่อน (Pan) จะปล่อยให้บราวเซอร์ทำงาน Scroll ปกติของมือถือ (ไม่ใส่ preventDefault)
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                isPinching = true;
+                initialPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialPinchZoom = mDisplayZoom;
+                return;
+            }
+
             if (measureMode === 'pan') return; 
             
             e.preventDefault(); 
-            if(e.touches.length > 0) {
-                handleMeasurePointerEvent(e.touches[0].clientX, e.touches[0].clientY);
+            if(e.touches.length === 1 && !isPinching) {
+                handleMeasurePointerEvent(e.touches[0].clientX, e.touches[0].clientY, e.shiftKey);
             }
         }, {passive: false});
+
+        mCanvas.addEventListener('touchmove', (e) => {
+            // ระบบ Pinch-to-Zoom (ใช้ 2 นิ้วถ่างเข้าออก)
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault();
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                let newZoom = initialPinchZoom * (currentDist / initialPinchDist);
+                newZoom = Math.max(0.2, Math.min(newZoom, 5.0));
+                applyMeasureZoom(newZoom);
+                return;
+            }
+
+            if (measureMode === 'pan') return;
+            if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
+            
+            if (e.touches.length === 1 && !isPinching) {
+                e.preventDefault();
+                const rect = mCanvas.getBoundingClientRect();
+                let x = (e.touches[0].clientX - rect.left) * (mCanvas.width / rect.width); 
+                let y = (e.touches[0].clientY - rect.top) * (mCanvas.height / rect.height);
+                
+                if (e.shiftKey && measurePoints.length > 0) {
+                    const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                    x = orthoPt.x; y = orthoPt.y;
+                }
+                redrawMeasure(x, y);
+            }
+        }, {passive: false});
+
+        mCanvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+            }
+        });
 
         mCanvas.addEventListener('mousemove', (e) => {
             if (measureMode === 'pan') return;
             if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
             
             const rect = mCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
-            const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            let x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
+            let y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            if (e.shiftKey && measurePoints.length > 0) {
+                const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                x = orthoPt.x; 
+                y = orthoPt.y;
+            }
             
             let snapX = x, snapY = y;
             if (measurePoints.length > 2) {
@@ -1508,33 +1585,65 @@
             redrawMeasure(snapX, snapY);
         });
 
+        // ฟังก์ชันวาดป้ายกำกับระยะ (Distance Label)
+        function drawDimension(p1, p2) {
+            const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            if (distPx < 1) return;
+            
+            const distM = pxToRealMeters(distPx);
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            mCtx.save();
+            mCtx.translate(midX, midY);
+            // พลิกตัวอักษรไม่ให้กลับหัว
+            if (angle > Math.PI/2 || angle < -Math.PI/2) { angle += Math.PI; }
+            mCtx.rotate(angle);
+            
+            const text = distM.toFixed(3) + " ม.";
+            mCtx.font = "bold 14px 'Segoe UI', Arial, sans-serif";
+            const textWidth = mCtx.measureText(text).width;
+            
+            // วาดพื้นหลังกล่องข้อความ
+            mCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            mCtx.fillRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
+            
+            // วาดขอบกล่องข้อความ
+            mCtx.strokeStyle = "#10B981"; // Emerald
+            mCtx.lineWidth = 1.5;
+            mCtx.strokeRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
+            
+            // วาดตัวอักษร
+            mCtx.fillStyle = "#0F766E"; // Dark Emerald
+            mCtx.textAlign = "center";
+            mCtx.textBaseline = "bottom";
+            mCtx.fillText(text, 0, -5);
+            mCtx.restore();
+        }
+
         function redrawMeasure(mouseX, mouseY) {
             if(!mImgData) return;
             mCtx.putImageData(mImgData, 0, 0);
             if (measurePoints.length === 0) return;
 
+            // ถมสีพื้นที่
             if (isMeasureClosed && measurePoints.length > 2) {
                 mCtx.beginPath();
                 mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
-                for(let i=1; i<measurePoints.length; i++) {
-                    mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
-                }
+                for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
                 mCtx.closePath();
                 mCtx.fillStyle = "rgba(16, 185, 129, 0.25)"; 
                 mCtx.fill();
             }
 
+            // วาดเส้นต่อจุด
             mCtx.beginPath();
             mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
-            for(let i=1; i<measurePoints.length; i++) {
-                mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
-            }
+            for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
             
-            if (isMeasureClosed) {
-                mCtx.closePath();
-            } else if (mouseX !== undefined && mouseY !== undefined) {
-                mCtx.lineTo(mouseX, mouseY);
-            }
+            if (isMeasureClosed) mCtx.closePath();
+            else if (mouseX !== undefined && mouseY !== undefined) mCtx.lineTo(mouseX, mouseY);
             
             mCtx.strokeStyle = "#EF4444"; 
             mCtx.lineWidth = 3;
@@ -1542,6 +1651,7 @@
             mCtx.lineCap = "round";
             mCtx.stroke();
 
+            // วาดจุดกึ่งกลาง (Vertex)
             mCtx.fillStyle = "#3B82F6"; 
             for(let pt of measurePoints) {
                 mCtx.beginPath();
@@ -1549,6 +1659,17 @@
                 mCtx.fill();
             }
             
+            // วาด Label บอกระยะบนแต่ละเส้น
+            for(let i=0; i<measurePoints.length - 1; i++) {
+                drawDimension(measurePoints[i], measurePoints[i+1]);
+            }
+            if (isMeasureClosed && measurePoints.length > 2) {
+                drawDimension(measurePoints[measurePoints.length - 1], measurePoints[0]);
+            } else if (!isMeasureClosed && mouseX !== undefined && mouseY !== undefined) {
+                drawDimension(measurePoints[measurePoints.length - 1], {x: mouseX, y: mouseY});
+            }
+
+            // วงกลมแจ้งเตือน (Snap Guide)
             if (!isMeasureClosed && measurePoints.length > 2 && mouseX !== undefined) {
                  const distToFirst = Math.hypot(mouseX - measurePoints[0].x, mouseY - measurePoints[0].y);
                  if (distToFirst < 15 || (mouseX === measurePoints[0].x && mouseY === measurePoints[0].y)) {
