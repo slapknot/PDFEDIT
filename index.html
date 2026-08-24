@@ -415,7 +415,10 @@
                     if (!selectedIndices.has(index)) { selectedIndices.clear(); selectedIndices.add(index); }
                     draggedIndex = index; e.dataTransfer.setData('text/plain', index); card.classList.add('dragging'); 
                 };
-                card.ondragend = () => { card.classList.remove('dragging'); renderGrid(); };
+                card.ondragend = (e) => { 
+                    e.stopPropagation();
+                    card.classList.remove('dragging'); 
+                };
                 card.ondragover = (e) => { 
                     e.preventDefault(); const rect = card.getBoundingClientRect();
                     if (e.clientX > rect.left + rect.width / 2) { card.classList.add('border-r-4', 'border-emerald-500'); card.classList.remove('border-l-4'); } 
@@ -423,9 +426,11 @@
                 };
                 card.ondragleave = () => { card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500'); };
                 
-                // 🛠️ 100% Bug-free Unselected-Baseline Reorder Logic
+                // 🛠️ 100% Bug-free Unselected-Baseline Reorder Logic (No Duplicate/Shuffling)
                 card.ondrop = (e) => {
-                    e.preventDefault(); card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500');
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500');
                     if (draggedIndex === null || selectedIndices.has(index)) return;
                     saveState(); 
 
@@ -453,7 +458,8 @@
                         selectedIndices.add(loadedPages.indexOf(item));
                     }
 
-                    draggedIndex = null; renderGrid();
+                    draggedIndex = null; 
+                    renderGrid();
                 };
 
                 card.onclick = (e) => { if (e.target.tagName !== 'SELECT') handleCardClick(e, index); };
@@ -496,9 +502,10 @@
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
             const origSize = copiedPage.getSize();
-            const rotation = pd.rotation || 0;
+            const sourceRot = copiedPage.getRotation().angle;
+            const totalRot = (sourceRot + (pd.rotation || 0)) % 360;
 
-            copiedPage.setRotation(PDFLib.degrees(rotation));
+            copiedPage.setRotation(PDFLib.degrees(totalRot));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
@@ -516,14 +523,14 @@
                     const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
-                    return { page: newPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
+                    return { page: newPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
                 } catch (e) {
                     newPdf.addPage(copiedPage);
-                    return { page: copiedPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                    return { page: copiedPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                return { page: copiedPage, meta: { rotation, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                return { page: copiedPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
             }
         }
 
