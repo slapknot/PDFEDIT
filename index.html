@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">จัดการหน้ากระดาษ A3/A4 หมุนและ Export ตรงกัน 100%</p>
+                    <p class="text-slate-500 text-xs mt-0.5">คลิกเลือกหน้าและหมุนหน้าได้อย่างแม่นยำ 100% ตรงกับไฟล์ Export</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -310,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Safe Reorder Bug Fix)
+        // Core Logic (Organizer, Undo/Redo & Optimized Click Performance)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -391,9 +391,7 @@
                     const loadingTask = pdfjsLib.getDocument({ data: fileBytes.slice(0) });
                     const pdfDocJs = await loadingTask.promise;
                     for (let i = 1; i <= pdfDocJs.numPages; i++) {
-                        const pageJs = await pdfDocJs.getPage(i);
-                        const initialRot = pageJs.rotate || 0;
-                        loadedPages.push({ sourceIdx, pageIndex: i - 1, initialRotation: initialRot, rotation: 0, sizeKey: "Original", pdfDocJs, pageNumber: i });
+                        loadedPages.push({ sourceIdx, pageIndex: i - 1, rotation: 0, sizeKey: "Original", pdfDocJs, pageNumber: i });
                     }
                 }
                 document.getElementById('drop-content').classList.add('hidden'); document.getElementById('file-info').classList.remove('hidden');
@@ -485,9 +483,7 @@
                 ctrlBar.appendChild(sizeSelect);
                 card.appendChild(ctrlBar); gridContainer.appendChild(card);
                 try {
-                    const page = await pageData.pdfDocJs.getPage(pageData.pageNumber); 
-                    const totalRot = (pageData.initialRotation + pageData.rotation) % 360;
-                    const viewport = page.getViewport({ scale: 0.25, rotation: totalRot });
+                    const page = await pageData.pdfDocJs.getPage(pageData.pageNumber); const viewport = page.getViewport({ scale: 0.25, rotation: pageData.rotation });
                     canvas.height = viewport.height; canvas.width = viewport.width; await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
                 } catch (e) { }
             }
@@ -541,10 +537,9 @@
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
             const origSize = copiedPage.getSize();
-            const sourceRot = copiedPage.getRotation().angle;
-            const totalRot = (sourceRot + (pd.rotation || 0)) % 360;
+            const targetRot = pd.rotation || 0;
 
-            copiedPage.setRotation(PDFLib.degrees(totalRot));
+            copiedPage.setRotation(PDFLib.degrees(targetRot));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
@@ -562,14 +557,14 @@
                     const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
-                    return { page: newPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
+                    return { page: newPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
                 } catch (e) {
                     newPdf.addPage(copiedPage);
-                    return { page: copiedPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                    return { page: copiedPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                return { page: copiedPage, meta: { rotation: totalRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                return { page: copiedPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
             }
         }
 
@@ -730,11 +725,10 @@
             previewPageIdx = pageIdx;
             const pd = loadedPages[pageIdx]; const page = await pd.pdfDocJs.getPage(pd.pageNumber);
             
-            const totalRot = (pd.initialRotation + pd.rotation) % 360;
-            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: totalRot });
+            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: pd.rotation });
             currentPdfWidth = unscaledViewport.width; currentPdfHeight = unscaledViewport.height;
 
-            const viewport = page.getViewport({ scale: 0.8, rotation: totalRot });
+            const viewport = page.getViewport({ scale: 0.8, rotation: pd.rotation });
             previewCanvas.height = viewport.height; previewCanvas.width = viewport.width;
             await page.render({ canvasContext: previewCanvas.getContext('2d'), viewport }).promise;
             updateTargetAppearance(); updateTargetPos();
