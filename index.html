@@ -85,41 +85,34 @@
             </div>
         </div>
 
-        <!-- Engineering Pro Tools Grid (ครบถ้วนทุกฟังก์ชันเหมือน Python) -->
+        <!-- Engineering Pro Tools Grid -->
         <div class="mt-8 border-t pt-6">
             <h2 class="text-lg font-bold text-slate-800 mb-4">⚙️ ชุดเครื่องมือวิศวกรและเครื่องมือพื้นฐาน (Engineering Tools)</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-xs text-slate-500">คำนวณระยะทางจากแบบ Drawing</p></div>
                     <button onclick="openMeasurementTool()" class="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">🗺️ เปรียบเทียบแบบ (Compare)</h4><p class="text-xs text-slate-500">เทียบไฟล์ P&ID เก่า/ใหม่</p></div>
                     <button onclick="toolComparePDF()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">🔍 ไฮไลต์คำอัตโนมัติ</h4><p class="text-xs text-slate-500">ค้นหา Keyword และป้ายไฮไลต์</p></div>
                     <button onclick="toolAutoHighlight()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์ (Redaction)</h4><p class="text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
                     <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">🔐 เข้ารหัสป้องกัน (Protect)</h4><p class="text-xs text-slate-500">ตั้งรหัสผ่านล็อกไฟล์ PDF</p></div>
                     <button onclick="toolProtect()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-sm text-slate-800">📝 แยกข้อความ (.txt)</h4><p class="text-xs text-slate-500">ดึงตัวอักษรทั้งหมดออกเป็นไฟล์ Text</p></div>
                     <button onclick="toolExtractText()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition">เปิดใช้งาน</button>
                 </div>
-
             </div>
         </div>
 
@@ -387,7 +380,7 @@
                         downloadFile(await newPdf.save(), `Split_Page_${i+1}.pdf`);
                     }
                 }
-            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาดในการแยกไฟล์"); }
             finally { loadingBox.classList.add('hidden'); }
         }
 
@@ -414,7 +407,7 @@
                     newPdf.addPage(p);
                 }
                 downloadFile(await newPdf.save(), "Stamped_Document.pdf");
-            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาดในการประทับตรายาง"); }
             finally { loadingBox.classList.add('hidden'); }
         }
 
@@ -441,7 +434,7 @@
                     newPdf.addPage(p);
                 }
                 downloadFile(await newPdf.save(), "Redacted_Document.pdf");
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
             finally { loadingBox.classList.add('hidden'); }
         }
 
@@ -469,7 +462,7 @@
                 link.href = URL.createObjectURL(blob);
                 link.download = "Extracted_Text.txt";
                 link.click();
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
             finally { loadingBox.classList.add('hidden'); }
         }
 
@@ -488,29 +481,34 @@
             alert("แนะนำใช้งานฟังก์ชันวัดระยะทาง (Measurement) ผ่าน Desktop Version (Python) เพื่อความแม่นยำทางสเกล Drawing ครับ");
         }
 
+        // 📌 แก้ไขฟังก์ชันบันทึกหลักให้ปลอดภัยและรองรับการแปลงทุกรูปแบบ
         async function saveOrganizerPDF() {
             if (loadedPages.length === 0) return;
             loadingText.textContent = "กำลังปรับขนาด จัดเรียง และบันทึกไฟล์ PDF...";
             loadingBox.classList.remove('hidden');
 
             try {
-                const { PDFDocument, PageSizes } = PDFLib;
+                const { PDFDocument } = PDFLib;
                 const newPdf = await PDFDocument.create();
+                
+                // โหลดต้นฉบับทั้งหมดเก็บไว้ในหน่วยความจำ
                 const loadedDocLibs = {};
-                for (let src of sourcePdfDocs) {
-                    loadedDocLibs[sourcePdfDocs.indexOf(src)] = await PDFDocument.load(src.arrayBuffer);
+                for (let i = 0; i < sourcePdfDocs.length; i++) {
+                    loadedDocLibs[i] = await PDFDocument.load(sourcePdfDocs[i].arrayBuffer);
                 }
 
                 for (let pageData of loadedPages) {
                     const sourceDoc = loadedDocLibs[pageData.sourceIdx];
                     const [copiedPage] = await newPdf.copyPages(sourceDoc, [pageData.pageIndex]);
 
-                    if (pageData.rotation !== 0) {
+                    // ปรับมุมหมุน
+                    if (pageData.rotation && pageData.rotation !== 0) {
                         const currentRot = copiedPage.getRotation().angle;
                         copiedPage.setRotation(PDFLib.degrees(currentRot + pageData.rotation));
                     }
 
-                    if (pageData.sizeKey !== "Original" && STANDARD_SIZES[pageData.sizeKey]) {
+                    // ปรับขนาดหน้ากระดาษ (A4, A3 ฯลฯ)
+                    if (pageData.sizeKey && pageData.sizeKey !== "Original" && STANDARD_SIZES[pageData.sizeKey]) {
                         const [targetW, targetH] = STANDARD_SIZES[pageData.sizeKey];
                         copiedPage.setSize(targetW, targetH);
                     }
@@ -518,9 +516,14 @@
                     newPdf.addPage(copiedPage);
                 }
 
-                downloadFile(await newPdf.save(), "Master_Organized_Document.pdf");
-            } catch (err) { console.error(err); alert("เกิดข้อผิดพลาดในการบันทึก"); }
-            finally { loadingBox.classList.add('hidden'); }
+                const pdfBytes = await newPdf.save();
+                downloadFile(pdfBytes, "Master_Organized_Document.pdf");
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการบันทึกไฟล์ PDF: " + err.message);
+            } finally {
+                loadingBox.classList.add('hidden');
+            }
         }
 
         function clearWorkspace() {
