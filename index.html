@@ -302,7 +302,7 @@
                 </div>
                 <div class="flex-1 relative overflow-auto flex items-center justify-center p-3 sm:p-4 bg-slate-100" id="sign-preview-container">
                     <div class="relative inline-block shadow-md bg-white">
-                        <canvas id="sign-preview-canvas" class="block max-h-[55vh] object-contain cursor-crosshair"></canvas>
+                        <canvas id="sign-preview-canvas" class="block max-h-[55vh] max-w-full object-contain cursor-crosshair"></canvas>
                         <div id="sign-target" class="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center whitespace-nowrap transition-none cursor-move" style="top: 80%; left: 80%;"></div>
                     </div>
                 </div>
@@ -339,9 +339,9 @@
 
                 <!-- แถบ 3: Zoom In/Out -->
                 <div class="flex items-center bg-white border border-slate-300 rounded-lg overflow-hidden w-full sm:w-auto">
-                    <button onclick="changeMeasureZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base">-</button>
-                    <span id="measure-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200">100%</span>
-                    <button onclick="changeMeasureZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base">+</button>
+                    <button onclick="changeMeasureZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base w-10">-</button>
+                    <span id="measure-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200 py-1.5">100%</span>
+                    <button onclick="changeMeasureZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base w-10">+</button>
                 </div>
 
                 <!-- แถบ 4: สเกลและรีเซ็ต -->
@@ -392,10 +392,10 @@
                 <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition">✖</button>
             </div>
             <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-start sm:items-center justify-center p-2 sm:p-4 shadow-inner relative">
-                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-none m-auto"></canvas>
+                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full m-auto"></canvas>
             </div>
             <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold text-center">
-                💡 สามารถใช้สองนิ้วซูม หรือไถเลื่อนหน้าจอเพื่อดูรายละเอียดได้
+                💡 สามารถใช้ลูกกลิ้งเมาส์ไถเลื่อนหน้าจอเพื่อดูรายละเอียดได้
             </div>
         </div>
     </div>
@@ -554,11 +554,31 @@
                     card.classList.add('dragging'); 
                 };
                 card.ondragend = (e) => { e.stopPropagation(); card.classList.remove('dragging'); };
-                card.ondragover = (e) => { 
-                    e.preventDefault(); const rect = card.getBoundingClientRect();
-                    if (e.clientX > rect.left + rect.width / 2) { card.classList.add('border-r-4', 'border-emerald-500'); card.classList.remove('border-l-4'); } 
-                    else { card.classList.add('border-l-4', 'border-emerald-500'); card.classList.remove('border-r-4'); }
+                
+                // [แก้ไข] ใส่ ondragenter เพื่อให้ Mobile Safari อนุญาตให้ Drop ได้ตามมาตรฐาน HTML5
+                card.ondragenter = (e) => {
+                    e.preventDefault();
                 };
+                
+                card.ondragover = (e) => { 
+                    e.preventDefault(); 
+                    e.dataTransfer.dropEffect = 'move';
+                    const rect = card.getBoundingClientRect();
+                    
+                    let clientX = e.clientX;
+                    if (clientX === undefined && e.changedTouches && e.changedTouches.length > 0) {
+                        clientX = e.changedTouches[0].clientX;
+                    }
+                    
+                    if (clientX > rect.left + rect.width / 2) { 
+                        card.classList.add('border-r-4', 'border-emerald-500'); 
+                        card.classList.remove('border-l-4'); 
+                    } else { 
+                        card.classList.add('border-l-4', 'border-emerald-500'); 
+                        card.classList.remove('border-r-4'); 
+                    }
+                };
+                
                 card.ondragleave = () => { card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500'); };
                 
                 card.ondrop = (e) => {
@@ -566,6 +586,11 @@
                     card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500');
                     if (draggedIndex === null || selectedIndices.has(index)) return;
                     saveState(); 
+                    
+                    let clientX = e.clientX;
+                    if (clientX === undefined && e.changedTouches && e.changedTouches.length > 0) {
+                        clientX = e.changedTouches[0].clientX;
+                    }
 
                     const selectedArr = Array.from(selectedIndices).sort((a, b) => a - b);
                     const itemsToMove = selectedArr.map(i => loadedPages[i]);
@@ -578,7 +603,7 @@
 
                     let targetUnselectedIdx = unselected.indexOf(targetItem);
                     const rect = card.getBoundingClientRect();
-                    const insertAfter = e.clientX > rect.left + rect.width / 2;
+                    const insertAfter = clientX > rect.left + rect.width / 2;
                     if (insertAfter) targetUnselectedIdx++;
 
                     unselected.splice(targetUnselectedIdx, 0, ...itemsToMove);
@@ -597,8 +622,9 @@
                     }
                 };
 
+                // [แก้ไข] เพิ่ม max-w-full ให้ canvas ใน thumbnail เพื่อป้องกันกระดาษไซส์ใหญ่ล้นขอบการ์ดใน PC
                 const canvas = document.createElement('canvas'); 
-                canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-24 sm:max-h-36 w-auto object-contain pointer-events-none mx-auto';
+                canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-24 sm:max-h-36 max-w-full object-contain pointer-events-none mx-auto';
                 card.appendChild(canvas);
                 
                 const ctrlBar = document.createElement('div'); 
