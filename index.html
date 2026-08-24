@@ -497,7 +497,7 @@
         function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
         // =========================================================
-        // 🚀 Helper: Perfect Append Processed Page (Exact Preview Sync)
+        // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
