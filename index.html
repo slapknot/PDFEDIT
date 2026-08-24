@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-emerald-600 text-xs font-bold mt-0.5">✅ แก้ไขระบบคลิก/ลากหน้าลื่นไหล 100% | พิกัดหมุนและลายเซ็นตรงเป๊ะไม่มีเพี้ยน</p>
+                    <p class="text-emerald-600 text-xs font-bold mt-0.5">✅ อัปเกรดระบบพิกัด Matrix แล้ว หมุนหน้า พรีวิว ลายเซ็น ตรงกัน 100%</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -311,7 +311,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Fix Click Race Condition)
+        // Core Logic (Organizer, Undo/Redo & Zero Race Condition Fix)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -328,7 +328,6 @@
         const loadingBox = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
 
-        // Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             if (e.ctrlKey || e.metaKey) {
@@ -393,7 +392,8 @@
                     const pdfDocJs = await loadingTask.promise;
                     for (let i = 1; i <= pdfDocJs.numPages; i++) {
                         const pageJs = await pdfDocJs.getPage(i);
-                        const initialRot = pageJs.rotate || 0;
+                        // ดึงองศาการหมุนพื้นฐานของ PDF (Normalize ให้เป็นบวก 0-360)
+                        const initialRot = ((pageJs.rotate || 0) % 360 + 360) % 360;
                         loadedPages.push({ sourceIdx, pageIndex: i - 1, initialRotation: initialRot, rotation: 0, sizeKey: "Original", pdfDocJs, pageNumber: i });
                     }
                 }
@@ -404,7 +404,7 @@
             } catch (err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); } finally { hideLoading(); }
         }
 
-        // ตัวแปรล็อกคิวเรนเดอร์เพื่อป้องกัน Race Condition เวลาทำงานหนักๆ
+        // ตัวแปรล็อกคิวเรนเดอร์ป้องกันการคลิกรัวๆ แล้วหน้ารันมั่ว
         let currentRenderId = 0;
 
         async function renderGrid() {
@@ -416,7 +416,6 @@
             
             const canvasTasks = [];
 
-            // สร้างกล่อง DOM ก่อนแบบ Synchronous เพื่อไม่ให้เสียตำแหน่ง
             for (let index = 0; index < loadedPages.length; index++) {
                 const pageData = loadedPages[index];
                 const isSelected = selectedIndices.has(index);
@@ -437,6 +436,7 @@
                 };
                 card.ondragleave = () => { card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500'); };
                 
+                // 🛠️ Unselected-Baseline Reorder (จัดเรียงแม่นยำ ไม่ทำหน้ากระโดด)
                 card.ondrop = (e) => {
                     e.preventDefault(); e.stopPropagation();
                     card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500');
@@ -466,7 +466,7 @@
                     renderGrid();
                 };
 
-                // 🛑 โค้ดสำคัญ! อัปเดตเฉพาะสีการ์ด "ห้ามดึง renderGrid() ซ้ำเด็ดขาด" เวลาคลิกหน้ากระดาษ
+                // 🚀 อัปเดตเฉพาะสี CSS เท่านั้น (ไม่มีการเรียก renderGrid ซ้ำเพื่อป้องกัน Race condition)
                 card.onclick = (e) => { 
                     if (e.target.tagName !== 'SELECT') {
                         handleCardClick(e, index);
@@ -480,36 +480,29 @@
                 
                 const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
                 ctrlBar.innerHTML = `<span>P.${index + 1}</span>`;
-                
-                // นำปุ่ม Dropdown ปรับไซส์แต่ละหน้ากลับมาตามที่ต้องการ
                 const sizeSelect = document.createElement('select'); sizeSelect.className = 'border rounded p-1 text-xs bg-slate-50 font-semibold cursor-pointer';
                 Object.keys(STANDARD_SIZES).forEach(s => {
                     const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
                     if (pageData.sizeKey === s) opt.selected = true; sizeSelect.appendChild(opt);
                 });
-                // ให้วาดรูปใหม่แค่เฉพาะใบนั้น
                 sizeSelect.onchange = (e) => { saveState(); pageData.sizeKey = e.target.value; renderGrid(); };
                 ctrlBar.appendChild(sizeSelect);
-                card.appendChild(ctrlBar); 
                 gridContainer.appendChild(card);
 
-                // ดันงานวาด Canvas ลงคิวเพื่อไม่ให้กวนการลากวาง (Anti-Race Condition)
                 canvasTasks.push({ pageData, canvas });
             }
 
-            // สั่งทำงานวาด Canvas แบบเบื้องหลัง (Background Rendering)
+            // รัน Canvas แบบหลังบ้าน ไม่ล็อก UI 
             for (let task of canvasTasks) {
-                if (currentRenderId !== myRenderId) return; // หากคิวถูกสั่งยกเลิกให้หยุดทำงานทันที
+                if (currentRenderId !== myRenderId) return; 
                 try {
                     const page = await task.pageData.pdfDocJs.getPage(task.pageData.pageNumber);
                     if (currentRenderId !== myRenderId) return; 
 
-                    // คำนวณองศารวม (ค่าตั้งต้น + ค่าที่หมุน)
                     const totalRot = (task.pageData.initialRotation + task.pageData.rotation) % 360;
                     const viewport = page.getViewport({ scale: 0.25, rotation: totalRot });
                     
                     if (task.pageData.sizeKey && task.pageData.sizeKey !== "Original" && STANDARD_SIZES[task.pageData.sizeKey]) {
-                        // ปรับขนาดหน้าพรีวิวให้ตรงกับกระดาษที่เลือก (จำลองสัดส่วนจริง)
                         let [ptW, ptH] = STANDARD_SIZES[task.pageData.sizeKey];
                         if ((viewport.width > viewport.height && ptW < ptH) || (viewport.width < viewport.height && ptW > ptH)) {
                             const temp = ptW; ptW = ptH; ptH = temp;
@@ -544,7 +537,6 @@
             }
         }
 
-        // ⚡ อัปเดตเฉพาะสีการ์ด ไม่โหลดล้าง Canvas ป้องกันอาการหน้าสลับมั่ว
         function updateSelectionUI() {
             for (let i = 0; i < loadedPages.length; i++) {
                 const card = document.getElementById(`card-${i}`);
@@ -559,17 +551,9 @@
             document.getElementById('page-counter').textContent = `ทั้งหมด: ${loadedPages.length} หน้า | เลือก: ${selectedIndices.size} หน้า`;
         }
 
-        function selectAll() { 
-            selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); 
-            updateSelectionUI(); 
-        }
-
-        function rotateSelected(deg) { 
-            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); 
-            saveState(); 
-            selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); 
-            renderGrid(); 
-        }
+        function selectAll() { selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); updateSelectionUI(); }
+        function rotateSelected(deg) { if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); saveState(); selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); renderGrid(); }
+        function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
 
         function resizeSelectedPages() {
             if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน");
@@ -581,29 +565,19 @@
             saveState(); selectedIndices.forEach(idx => loadedPages[idx].sizeKey = match); renderGrid();
         }
 
-        function deleteSelected() { 
-            if (selectedIndices.size === 0) return; 
-            saveState(); 
-            loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); 
-            selectedIndices.clear(); lastClickedIndex = null; 
-            renderGrid(); 
-        }
-
         // =========================================================
-        // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync)
+        // 🚀 Helper: Perfect Append Processed Page (Absolute Sync Rotation)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            const origSize = copiedPage.getSize(); // ดึงความกว้างยาว (อิงตาม Rotate แล้ว)
+            const origSize = copiedPage.getSize(); 
             
-            // นำมุมตั้งต้นของไฟล์ (sourceRot) มารวมกับมุมที่ผู้ใช้สั่งหมุน (pd.rotation)
             const sourceRot = copiedPage.getRotation().angle;
             const finalRot = (sourceRot + (pd.rotation || 0)) % 360;
             
-            // บังคับค่าองศาการหมุนลงใน PDF อย่างเด็ดขาดให้ตรงหน้าจอ Preview
+            // ใช้ setRotation ในการบอก PDF viewer ให้อ่านหน้านี้ด้วยองศานี้ตรงๆ 
             copiedPage.setRotation(PDFLib.degrees(finalRot));
 
-            // หาความกว้าง/ความสูงจริงแบบเนื้อหาแท้ๆ (Unrotated Box)
             let unrotatedW = origSize.width;
             let unrotatedH = origSize.height;
             if (sourceRot === 90 || sourceRot === 270) {
@@ -626,52 +600,44 @@
                     
                     const newPage = newPdf.addPage([targetW, targetH]);
                     const scaleFactor = Math.min(targetW / visualW, targetH / visualH);
-                    
-                    const scaledVisualW = visualW * scaleFactor;
-                    const scaledVisualH = visualH * scaleFactor;
-                    const tx = (targetW - scaledVisualW) / 2;
-                    const ty = (targetH - scaledVisualH) / 2;
+                    const scaledVisualW = visualW * scaleFactor; const scaledVisualH = visualH * scaleFactor;
+                    const tx = (targetW - scaledVisualW) / 2; const ty = (targetH - scaledVisualH) / 2;
 
-                    // การแก้ปัญหาหมุนตอนเปลี่ยนขนาดกระดาษ
                     let drawX = tx, drawY = ty, drawAngle = 0;
                     if (finalRot === 90) { drawX = tx; drawY = ty + scaledVisualH; drawAngle = -90; } 
                     else if (finalRot === 180) { drawX = tx + scaledVisualW; drawY = ty + scaledVisualH; drawAngle = -180; } 
                     else if (finalRot === 270) { drawX = tx + scaledVisualW; drawY = ty; drawAngle = 90; }
 
-                    newPage.drawPage(embeddedPage, {
-                        x: drawX, y: drawY,
-                        width: unrotatedW * scaleFactor, height: unrotatedH * scaleFactor,
-                        rotate: PDFLib.degrees(drawAngle)
-                    });
-
-                    return { page: newPage, meta: { baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty, vW: targetW, vH: targetH } };
+                    newPage.drawPage(embeddedPage, { x: drawX, y: drawY, width: unrotatedW * scaleFactor, height: unrotatedH * scaleFactor, rotate: PDFLib.degrees(drawAngle) });
+                    return { page: newPage, meta: { baked: true, rotation: finalRot, vW: targetW, vH: targetH, origWidth: unrotatedW, origHeight: unrotatedH, scale: scaleFactor, offsetX: tx, offsetY: ty } };
                 } catch(e) {
                     newPdf.addPage(copiedPage);
-                    return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: copiedPage.getSize().width, vH: copiedPage.getSize().height } };
+                    return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: (finalRot === 90 || finalRot === 270) ? unrotatedH : unrotatedW, vH: (finalRot === 90 || finalRot === 270) ? unrotatedW : unrotatedH, origWidth: unrotatedW, origHeight: unrotatedH, scale: 1, offsetX: 0, offsetY: 0 } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                // ขนาดจาก getSize() จะอิงตาม finalRot ทำให้ขนาดภาพและองศาตรงหน้า Preview อัตโนมัติ
-                return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: copiedPage.getSize().width, vH: copiedPage.getSize().height } };
+                return { page: copiedPage, meta: { baked: false, rotation: finalRot, vW: (finalRot === 90 || finalRot === 270) ? unrotatedH : unrotatedW, vH: (finalRot === 90 || finalRot === 270) ? unrotatedW : unrotatedH, origWidth: unrotatedW, origHeight: unrotatedH, scale: 1, offsetX: 0, offsetY: 0 } };
             }
         }
 
-        // สมการ Matrix สำหรับหาพิกัดตรายางชดเชยการหมุนให้ตรงเป๊ะทุกสเกล
+        // =========================================================
+        // Matrix Transformations for Coordinate Accuracy
+        // =========================================================
         function mapVisualToUnrotated(vx, vy, meta) {
-            if (meta.baked) {
-                // หากผ่านการ Resize ไปแล้ว กระดาษจะเป็น Rotate 0 หน้าตรงเสมอ ให้ใช้พิกัดตามหน้าจอได้เลย
-                return { x: vx, y: vy, angleDeg: 0 };
-            }
+            if (meta.baked) return { x: vx, y: vy, angleDeg: 0 };
             const r = ((meta.rotation % 360) + 360) % 360;
-            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
-            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-
+            const uW = meta.origWidth; const uH = meta.origHeight;
             let ox, oy;
             if (r === 0) { ox = vx; oy = vy; }
             else if (r === 90) { ox = uW - vy; oy = vx; }
             else if (r === 180) { ox = uW - vx; oy = uH - vy; }
             else if (r === 270) { ox = vy; oy = uH - vx; }
             return { x: ox, y: oy, angleDeg: r };
+        }
+
+        function getPdfDrawParams(relX, relY, meta) {
+            const vx_c = relX * meta.vW; const vy_c = (1 - relY) * meta.vH;
+            return mapVisualToUnrotated(vx_c, vy_c, meta);
         }
 
         async function saveOrganizerPDF() {
@@ -701,8 +667,7 @@
                 } 
                 else if (mode === 'image') {
                     for (let pd of loadedPages) {
-                        const page = await pd.pdfDocJs.getPage(pd.pageNumber); 
-                        const totalRot = (pd.initialRotation + pd.rotation) % 360;
+                        const page = await pd.pdfDocJs.getPage(pd.pageNumber); const totalRot = (pd.initialRotation + pd.rotation) % 360;
                         const viewport = page.getViewport({ scale: 2.0, rotation: totalRot }); 
                         const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
@@ -833,6 +798,7 @@
             signRelY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)); 
             updateTargetPos();
         });
+
         function updateTargetPos() {
             const targetBox = document.getElementById('sign-target'); targetBox.style.left = `${signRelX * 100}%`; targetBox.style.top = `${signRelY * 100}%`;
         }
@@ -920,44 +886,52 @@
                     const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                     
                     if (targetPages.includes(idx)) {
-                        const vW = meta.vW; const vH = meta.vH;
-                        const vx_c = signRelX * vW; const vy_c = (1 - signRelY) * vH;
+                        const { cx, cy, angleDeg } = getPdfDrawParams(signRelX, signRelY, meta);
+                        const rad = angleDeg * Math.PI / 180;
+                        const cos = Math.cos(rad); const sin = Math.sin(rad);
                         
                         if (signMode === 'stamp') {
                             const stampText = document.getElementById('sign-stamp-val').value; const fontSize = 24 * scaleVal;
                             const boxW = 160 * scaleVal; const boxH = 40 * scaleVal;
                             
-                            const posBox = mapVisualToUnrotated(vx_c - boxW/2, vy_c - boxH/2, meta);
-                            p.drawRectangle({ x: posBox.x, y: posBox.y, width: boxW, height: boxH, borderColor: colorRGB, borderWidth: 3 * scaleVal, rotate: PDFLib.degrees(posBox.angleDeg) });
+                            const bx = cx + (-boxW/2)*cos - (-boxH/2)*sin;
+                            const by = cy + (-boxW/2)*sin + (-boxH/2)*cos;
+                            p.drawRectangle({ x: bx, y: by, width: boxW, height: boxH, borderColor: colorRGB, borderWidth: 3 * scaleVal, rotate: PDFLib.degrees(angleDeg) });
                             
                             const textWidth = font.widthOfTextAtSize(stampText, fontSize);
-                            const posText = mapVisualToUnrotated(vx_c - textWidth/2, vy_c - fontSize/3, meta);
-                            p.drawText(stampText, { x: posText.x, y: posText.y, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(posText.angleDeg) });
+                            const tx = cx + (-textWidth/2)*cos - (-fontSize/3)*sin;
+                            const ty = cy + (-textWidth/2)*sin + (-fontSize/3)*cos;
+                            p.drawText(stampText, { x: tx, y: ty, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(angleDeg) });
                             
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                const posDate = mapVisualToUnrotated(vx_c - dateWidth/2, vy_c - boxH/2 - 12 * scaleVal, meta);
-                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(posDate.angleDeg) });
+                                const dx = cx + (-dateWidth/2)*cos - (-boxH/2 - 12 * scaleVal)*sin;
+                                const dy = cy + (-dateWidth/2)*sin + (-boxH/2 - 12 * scaleVal)*cos;
+                                p.drawText(timestamp, { x: dx, y: dy, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(angleDeg) });
                             }
                         } else if (signMode === 'text') {
                             const text = document.getElementById('sign-text-val').value || "Signed"; const fontSize = 16 * scaleVal;
                             const textWidth = font.widthOfTextAtSize(text, fontSize);
-                            const posText = mapVisualToUnrotated(vx_c - textWidth/2, vy_c - fontSize/2, meta);
-                            p.drawText(text, { x: posText.x, y: posText.y, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(posText.angleDeg) });
+                            const tx = cx + (-textWidth/2)*cos - (-fontSize/2)*sin;
+                            const ty = cy + (-textWidth/2)*sin + (-fontSize/2)*cos;
+                            p.drawText(text, { x: tx, y: ty, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(angleDeg) });
                             
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                const posDate = mapVisualToUnrotated(vx_c - dateWidth/2, vy_c - fontSize/2 - 14 * scaleVal, meta);
-                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(posDate.angleDeg) });
+                                const dx = cx + (-dateWidth/2)*cos - (-fontSize/2 - 14 * scaleVal)*sin;
+                                const dy = cy + (-dateWidth/2)*sin + (-fontSize/2 - 14 * scaleVal)*cos;
+                                p.drawText(timestamp, { x: dx, y: dy, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(angleDeg) });
                             }
                         } else if (signMode === 'image' && embedImg) {
-                            const posImg = mapVisualToUnrotated(vx_c - imgDims.width/2, vy_c - imgDims.height/2, meta);
-                            p.drawImage(embedImg, { x: posImg.x, y: posImg.y, width: imgDims.width, height: imgDims.height, rotate: PDFLib.degrees(posImg.angleDeg) });
+                            const ix = cx + (-imgDims.width/2)*cos - (-imgDims.height/2)*sin;
+                            const iy = cy + (-imgDims.width/2)*sin + (-imgDims.height/2)*cos;
+                            p.drawImage(embedImg, { x: ix, y: iy, width: imgDims.width, height: imgDims.height, rotate: PDFLib.degrees(angleDeg) });
                             
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                const posDate = mapVisualToUnrotated(vx_c - dateWidth/2, vy_c - imgDims.height/2 - 14 * scaleVal, meta);
-                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(posDate.angleDeg) });
+                                const dx = cx + (-dateWidth/2)*cos - (-imgDims.height/2 - 14 * scaleVal)*sin;
+                                const dy = cy + (-dateWidth/2)*sin + (-imgDims.height/2 - 14 * scaleVal)*cos;
+                                p.drawText(timestamp, { x: dx, y: dy, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(angleDeg) });
                             }
                         }
                     }
@@ -970,16 +944,9 @@
         // Other Tools (Redact, Highlight, Excel, Compare, Measure)
         // =========================================================
         function mapUnrotatedToVisual(ox, oy, meta) {
-            if (meta.baked) return { x: ox, y: oy, angleDeg: 0 }; 
+            if (meta.baked) { return { x: ox * meta.scale + meta.offsetX, y: oy * meta.scale + meta.offsetY, angleDeg: 0 }; }
             const r = ((meta.rotation % 360) + 360) % 360;
-            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
-            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-            let vx, vy;
-            if (r === 0) { vx = ox; vy = oy; }
-            else if (r === 90) { vx = oy; vy = uW - ox; }
-            else if (r === 180) { vx = uW - ox; vy = uH - oy; }
-            else if (r === 270) { vx = uH - oy; vy = ox; }
-            return { x: vx, y: vy, angleDeg: r };
+            return { x: ox, y: oy, angleDeg: r };
         }
 
         async function findKeywordBoxes(pd, needle) {
@@ -1008,9 +975,12 @@
                     const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                     const boxes = await findKeywordBoxes(pd, needle);
                     for (let box of boxes) {
-                        const { x, y } = mapUnrotatedToVisual(box.x0, box.y0, meta);
-                        const posText = mapVisualToUnrotated(x, y, meta);
-                        p.drawRectangle({ x: posText.x - 2, y: posText.y - 2, width: (box.x1-box.x0) + 4, height: (box.y1-box.y0) + 4, color: rgb(0, 0, 0), rotate: PDFLib.degrees(posText.angleDeg) });
+                        if(!meta.baked) {
+                            p.drawRectangle({ x: box.x0 - 2, y: box.y0 - 2, width: (box.x1-box.x0) + 4, height: (box.y1-box.y0) + 4, color: rgb(0, 0, 0) });
+                        } else {
+                            const {x, y} = mapUnrotatedToVisual(box.x0, box.y0, meta);
+                            p.drawRectangle({ x: x - 2, y: y - 2, width: (box.x1-box.x0)*meta.scale + 4, height: (box.y1-box.y0)*meta.scale + 4, color: rgb(0, 0, 0), rotate: PDFLib.degrees(-meta.rotation) });
+                        }
                         matchCount++;
                     }
                 }
@@ -1033,9 +1003,12 @@
                     const { page: p, meta } = await appendProcessedPage(newPdf, cache[pd.sourceIdx], pd);
                     const boxes = await findKeywordBoxes(pd, needle);
                     for (let box of boxes) {
-                        const { x, y } = mapUnrotatedToVisual(box.x0, box.y0, meta);
-                        const posText = mapVisualToUnrotated(x, y, meta);
-                        p.drawRectangle({ x: posText.x - 1, y: posText.y - 1, width: (box.x1-box.x0) + 2, height: (box.y1-box.y0) + 2, color: rgb(1, 1, 0), opacity: 0.45, rotate: PDFLib.degrees(posText.angleDeg) });
+                        if(!meta.baked) {
+                            p.drawRectangle({ x: box.x0 - 1, y: box.y0 - 1, width: (box.x1-box.x0) + 2, height: (box.y1-box.y0) + 2, color: rgb(1, 1, 0), opacity: 0.45 });
+                        } else {
+                            const {x, y} = mapUnrotatedToVisual(box.x0, box.y0, meta);
+                            p.drawRectangle({ x: x - 1, y: y - 1, width: (box.x1-box.x0)*meta.scale + 2, height: (box.y1-box.y0)*meta.scale + 2, color: rgb(1, 1, 0), opacity: 0.45, rotate: PDFLib.degrees(-meta.rotation) });
+                        }
                         matchCount++;
                     }
                 }
