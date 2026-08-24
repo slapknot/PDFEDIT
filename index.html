@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">คลิกเลือกหน้าและหมุนหน้าได้อย่างแม่นยำ 100% ตรงกับไฟล์ Export</p>
+                    <p class="text-slate-500 text-xs mt-0.5">คลิกและลากสลับหน้าได้อย่างลื่นไหล | หมุนและ Export ตรงพรีวิว 100%</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -391,7 +391,9 @@
                     const loadingTask = pdfjsLib.getDocument({ data: fileBytes.slice(0) });
                     const pdfDocJs = await loadingTask.promise;
                     for (let i = 1; i <= pdfDocJs.numPages; i++) {
-                        loadedPages.push({ sourceIdx, pageIndex: i - 1, rotation: 0, sizeKey: "Original", pdfDocJs, pageNumber: i });
+                        const pageJs = await pdfDocJs.getPage(i);
+                        const initialRot = pageJs.rotate || 0;
+                        loadedPages.push({ sourceIdx, pageIndex: i - 1, initialRotation: initialRot, rotation: 0, sizeKey: "Original", pdfDocJs, pageNumber: i });
                     }
                 }
                 document.getElementById('drop-content').classList.add('hidden'); document.getElementById('file-info').classList.remove('hidden');
@@ -426,7 +428,7 @@
                 };
                 card.ondragleave = () => { card.classList.remove('border-r-4', 'border-l-4', 'border-emerald-500'); };
                 
-                // 🛠️ 100% Bug-free Unselected-Baseline Reorder Logic (No Duplicate/Shuffling)
+                // 🛠️ 100% Bug-free Unselected-Baseline Reorder Logic
                 card.ondrop = (e) => {
                     e.preventDefault(); 
                     e.stopPropagation();
@@ -466,7 +468,6 @@
                 card.onclick = (e) => { 
                     if (e.target.tagName !== 'SELECT') {
                         handleCardClick(e, index);
-                        updateSelectionUI();
                     }
                 };
 
@@ -483,10 +484,13 @@
                 ctrlBar.appendChild(sizeSelect);
                 card.appendChild(ctrlBar); gridContainer.appendChild(card);
                 try {
-                    const page = await pageData.pdfDocJs.getPage(pageData.pageNumber); const viewport = page.getViewport({ scale: 0.25, rotation: pageData.rotation });
+                    const page = await pageData.pdfDocJs.getPage(pageData.pageNumber); 
+                    const totalRot = (pageData.initialRotation + pageData.rotation) % 360;
+                    const viewport = page.getViewport({ scale: 0.25, rotation: totalRot });
                     canvas.height = viewport.height; canvas.width = viewport.width; await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
                 } catch (e) { }
             }
+            updateSelectionUI();
         }
 
         function handleCardClick(event, index) {
@@ -496,18 +500,19 @@
             } else if (event.ctrlKey || event.metaKey) {
                 selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); lastClickedIndex = index;
             } else { selectedIndices.clear(); selectedIndices.add(index); lastClickedIndex = index; }
+            
+            updateSelectionUI(); // ⚡ ป้องกันรวน: เปลี่ยนแค่สี CSS โดยไม่โหลด Canvas ซ้ำ
         }
 
         function updateSelectionUI() {
-            const cards = gridContainer.children;
-            for (let i = 0; i < cards.length; i++) {
-                const card = cards[i];
+            const cards = gridContainer.querySelectorAll('.page-card');
+            cards.forEach((card, i) => {
                 if (selectedIndices.has(i)) {
                     card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
                 } else {
                     card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
                 }
-            }
+            });
             document.getElementById('page-counter').textContent = `ทั้งหมด: ${loadedPages.length} หน้า | เลือก: ${selectedIndices.size} หน้า`;
         }
 
@@ -536,10 +541,19 @@
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            const origSize = copiedPage.getSize();
-            const targetRot = pd.rotation || 0;
+            
+            const sourceRot = copiedPage.getRotation().angle;
+            const finalRot = (sourceRot + (pd.rotation || 0)) % 360;
+            
+            copiedPage.setRotation(PDFLib.degrees(finalRot));
 
-            copiedPage.setRotation(PDFLib.degrees(targetRot));
+            const currentSize = copiedPage.getSize();
+            let unrotatedW = currentSize.width;
+            let unrotatedH = currentSize.height;
+            if (sourceRot === 90 || sourceRot === 270) {
+                unrotatedW = currentSize.height;
+                unrotatedH = currentSize.width;
+            }
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
@@ -557,14 +571,14 @@
                     const tx = (targetW - drawW) / 2; const ty = (targetH - drawH) / 2;
 
                     newPage.drawPage(embeddedPage, { x: tx, y: ty, width: drawW, height: drawH });
-                    return { page: newPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
+                    return { page: newPage, meta: { rotation: finalRot, origWidth: unrotatedW, origHeight: unrotatedH, baked: true, scale: scaleFactor, offsetX: tx, offsetY: ty } };
                 } catch (e) {
                     newPdf.addPage(copiedPage);
-                    return { page: copiedPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                    return { page: copiedPage, meta: { rotation: finalRot, origWidth: unrotatedW, origHeight: unrotatedH, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
                 }
             } else {
                 newPdf.addPage(copiedPage);
-                return { page: copiedPage, meta: { rotation: targetRot, origWidth: origSize.width, origHeight: origSize.height, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
+                return { page: copiedPage, meta: { rotation: finalRot, origWidth: unrotatedW, origHeight: unrotatedH, baked: false, scale: 1, offsetX: 0, offsetY: 0 } };
             }
         }
 
@@ -725,10 +739,11 @@
             previewPageIdx = pageIdx;
             const pd = loadedPages[pageIdx]; const page = await pd.pdfDocJs.getPage(pd.pageNumber);
             
-            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: pd.rotation });
+            const totalRot = (pd.initialRotation + pd.rotation) % 360;
+            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: totalRot });
             currentPdfWidth = unscaledViewport.width; currentPdfHeight = unscaledViewport.height;
 
-            const viewport = page.getViewport({ scale: 0.8, rotation: pd.rotation });
+            const viewport = page.getViewport({ scale: 0.8, rotation: totalRot });
             previewCanvas.height = viewport.height; previewCanvas.width = viewport.width;
             await page.render({ canvasContext: previewCanvas.getContext('2d'), viewport }).promise;
             updateTargetAppearance(); updateTargetPos();
@@ -826,29 +841,49 @@
                     if (targetPages.includes(idx)) {
                         const { x: drawX, y: drawY } = mapDisplayPointToPage(signRelX, signRelY, meta);
                         
+                        // สร้าง 2D Transform เพื่อให้ตรายางชดเชยการหมุนของหน้ากระดาษ (ถ้าหน้ากระดาษถูกหมุน ตรายางก็ต้องหมุนชดเชยเพื่อให้ดูเป็นแนวนอน)
+                        const drawRotAngle = meta.baked ? 0 : meta.rotation;
+                        const rad = drawRotAngle * Math.PI / 180;
+                        const getRotatedPos = (relX, relY) => {
+                            const dx = relX * Math.cos(rad) - relY * Math.sin(rad);
+                            const dy = relX * Math.sin(rad) + relY * Math.cos(rad);
+                            return { x: drawX + dx, y: drawY + dy };
+                        };
+                        
                         if (signMode === 'stamp') {
                             const stampText = document.getElementById('sign-stamp-val').value; const fontSize = 24 * scaleVal;
                             const boxW = 160 * scaleVal; const boxH = 40 * scaleVal;
-                            p.drawRectangle({ x: drawX - (boxW/2), y: drawY - (boxH/2), width: boxW, height: boxH, borderColor: colorRGB, borderWidth: 3 * scaleVal });
+                            const posBox = getRotatedPos(-boxW/2, -boxH/2);
+                            p.drawRectangle({ x: posBox.x, y: posBox.y, width: boxW, height: boxH, rotate: PDFLib.degrees(drawRotAngle), borderColor: colorRGB, borderWidth: 3 * scaleVal });
+                            
                             const textWidth = font.widthOfTextAtSize(stampText, fontSize);
-                            p.drawText(stampText, { x: drawX - (textWidth/2), y: drawY - (fontSize/3), size: fontSize, font: font, color: colorRGB });
+                            const posText = getRotatedPos(-textWidth/2, -fontSize/3);
+                            p.drawText(stampText, { x: posText.x, y: posText.y, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(drawRotAngle) });
+                            
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (boxH/2) - (12 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                                const posDate = getRotatedPos(-dateWidth/2, -boxH/2 - 12 * scaleVal);
+                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(drawRotAngle) });
                             }
                         } else if (signMode === 'text') {
                             const text = document.getElementById('sign-text-val').value || "Signed"; const fontSize = 16 * scaleVal;
                             const textWidth = font.widthOfTextAtSize(text, fontSize);
-                            p.drawText(text, { x: drawX - (textWidth/2), y: drawY - (fontSize/2), size: fontSize, font: font, color: colorRGB });
+                            const posText = getRotatedPos(-textWidth/2, -fontSize/2);
+                            p.drawText(text, { x: posText.x, y: posText.y, size: fontSize, font: font, color: colorRGB, rotate: PDFLib.degrees(drawRotAngle) });
+                            
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (fontSize/2) - (14 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                                const posDate = getRotatedPos(-dateWidth/2, -fontSize/2 - 14 * scaleVal);
+                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(drawRotAngle) });
                             }
                         } else if (signMode === 'image' && embedImg) {
-                            p.drawImage(embedImg, { x: drawX - (imgDims.width/2), y: drawY - (imgDims.height/2), width: imgDims.width, height: imgDims.height });
+                            const posImg = getRotatedPos(-imgDims.width/2, -imgDims.height/2);
+                            p.drawImage(embedImg, { x: posImg.x, y: posImg.y, width: imgDims.width, height: imgDims.height, rotate: PDFLib.degrees(drawRotAngle) });
+                            
                             if (addDate) {
                                 const dateWidth = font.widthOfTextAtSize(timestamp, 10 * scaleVal);
-                                p.drawText(timestamp, { x: drawX - (dateWidth/2), y: drawY - (imgDims.height/2) - (14 * scaleVal), size: 10 * scaleVal, font: font, color: colorRGB });
+                                const posDate = getRotatedPos(-dateWidth/2, -imgDims.height/2 - 14 * scaleVal);
+                                p.drawText(timestamp, { x: posDate.x, y: posDate.y, size: 10 * scaleVal, font: font, color: colorRGB, rotate: PDFLib.degrees(drawRotAngle) });
                             }
                         }
                     }
