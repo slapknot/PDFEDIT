@@ -19,8 +19,8 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .drag-active { border-color: #10B981 !important; background-color: #ECFDF5 !important; }
-        .page-card { transition: box-shadow 0.2s ease, opacity 0.2s ease; }
-        .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
+        .page-card { transition: box-shadow 0.1s ease, border-color 0.1s ease; }
+        .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); background-color: rgba(37, 99, 235, 0.03); }
         .page-card.dragging { opacity: 0.5; }
     </style>
 </head>
@@ -60,7 +60,7 @@
             <div id="file-info" class="hidden flex items-center justify-between px-4 pointer-events-none">
                 <div class="text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-slate-500 text-xs mt-0.5">ลากสลับตำแหน่งทีละหลายหน้าได้ ไม่มีหน้าซ้ำ ปรับสเกลเนื้อหาอัตโนมัติ</p>
+                    <p class="text-slate-500 text-xs mt-0.5">คลิกเลือกหน้าได้อย่างลื่นไหล ไม่กระตุก | รองรับ Multi-drag สลับหน้ากลุ่ม</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -310,7 +310,7 @@
 
     <script>
         // =========================================================
-        // Core Logic (Organizer, Undo/Redo & Auto Content Scaling)
+        // Core Logic (Organizer, Undo/Redo & Optimized Click Performance)
         // =========================================================
         let loadedPages = []; 
         let sourcePdfDocs = []; 
@@ -444,7 +444,14 @@
                     draggedIndex = null; renderGrid();
                 };
 
-                card.onclick = (e) => { if (e.target.tagName !== 'SELECT') handleCardClick(e, index); };
+                // 🚀 Optimized Click Handler (อัปเดตแค่ CSS Class ไม่เรนเดอร์ Canvas ซ้ำ ป้องกันอาการรวน)
+                card.onclick = (e) => { 
+                    if (e.target.tagName !== 'SELECT') {
+                        handleCardClick(e, index);
+                        updateSelectionUI();
+                    }
+                };
+
                 const canvas = document.createElement('canvas'); canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-36 object-contain pointer-events-none';
                 card.appendChild(canvas);
                 const ctrlBar = document.createElement('div'); ctrlBar.className = 'w-full flex justify-between items-center mt-3 pt-2 border-t text-xs font-bold text-slate-500';
@@ -471,24 +478,48 @@
             } else if (event.ctrlKey || event.metaKey) {
                 selectedIndices.has(index) ? selectedIndices.delete(index) : selectedIndices.add(index); lastClickedIndex = index;
             } else { selectedIndices.clear(); selectedIndices.add(index); lastClickedIndex = index; }
-            renderGrid();
         }
 
-        function selectAll() { selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); renderGrid(); }
-        function rotateSelected(deg) { if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); saveState(); selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); renderGrid(); }
-        function deleteSelected() { if (selectedIndices.size === 0) return; saveState(); loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); selectedIndices.clear(); lastClickedIndex = null; renderGrid(); }
+        // 🚀 อัปเดต UI หน้าจอเฉพาะตอนคลิกเลือก (ลื่นไหล ไม่กระตุก)
+        function updateSelectionUI() {
+            const cards = gridContainer.children;
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                if (selectedIndices.has(i)) {
+                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm selected border-blue-600 bg-blue-50/30";
+                } else {
+                    card.className = "page-card bg-white border-2 rounded-xl p-3 cursor-grab active:cursor-grabbing relative flex flex-col items-center shadow-sm border-slate-200 hover:border-slate-300";
+                }
+            }
+            document.getElementById('page-counter').textContent = `ทั้งหมด: ${loadedPages.length} หน้า | เลือก: ${selectedIndices.size} หน้า`;
+        }
+
+        function selectAll() { 
+            selectedIndices = selectedIndices.size === loadedPages.length ? new Set() : new Set(loadedPages.map((_, i) => i)); 
+            updateSelectionUI(); 
+        }
+
+        function rotateSelected(deg) { 
+            if (selectedIndices.size === 0) return alert("เลือกหน้าก่อน"); 
+            saveState(); 
+            selectedIndices.forEach(idx => loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360); 
+            renderGrid(); 
+        }
+
+        function deleteSelected() { 
+            if (selectedIndices.size === 0) return; 
+            saveState(); 
+            loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx)); 
+            selectedIndices.clear(); lastClickedIndex = null; 
+            renderGrid(); 
+        }
 
         // =========================================================
-        // 🚀 Helper: Append Processed Page (Auto Content Scale & Exact Match)
+        // 🚀 Helper: Perfect Append Processed Page (Exact Preview Sync)
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
-            let currentRot = copiedPage.getRotation().angle;
-            
-            if (pd.rotation && pd.rotation !== 0) {
-                currentRot = (currentRot + pd.rotation) % 360;
-                copiedPage.setRotation(PDFLib.degrees(currentRot));
-            }
+            copiedPage.setRotation(PDFLib.degrees(pd.rotation || 0));
 
             if (pd.sizeKey && pd.sizeKey !== "Original" && STANDARD_SIZES[pd.sizeKey]) {
                 try {
@@ -601,7 +632,7 @@
         }
 
         // =========================================================
-        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool - Preview Matches Export 100%)
+        // ✍️ ลายเซ็นต์และตรายาง (Sign & Stamp Tool)
         // =========================================================
         let signRelX = 0.5, signRelY = 0.5; let signMode = 'stamp';
         let previewCanvas = document.getElementById('sign-preview-canvas');
@@ -674,7 +705,6 @@
             const targetBox = document.getElementById('sign-target'); targetBox.style.left = `${signRelX * 100}%`; targetBox.style.top = `${signRelY * 100}%`;
         }
 
-        // 🔗 Sync Preview CSS to match PDF Point Coordinates Exactly
         function updateTargetAppearance() {
             const target = document.getElementById('sign-target'); 
             const scaleVal = parseFloat(document.getElementById('sign-scale').value) / 100.0;
