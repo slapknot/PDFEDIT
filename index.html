@@ -152,7 +152,7 @@
             <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4">⚙️ เครื่องมือวิศวกร (Engineering Tools)</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-[10px] sm:text-xs text-slate-500">ลากเมาส์คำนวณสเกล Drawing</p></div>
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📏 วัดระยะ & พื้นที่</h4><p class="text-[10px] sm:text-xs text-slate-500">สเกล + Zoom เข้าออกได้</p></div>
                     <button onclick="openMeasureModal()" class="bg-pink-500 hover:bg-pink-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -311,41 +311,64 @@
         </div>
     </div>
 
-    <!-- Modal: Measure Tool (อัปเดตใหม่) -->
-    <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[85vh] sm:h-[90vh]">
-            <div class="flex justify-between items-center mb-3 sm:mb-4">
-                <h3 class="font-bold text-lg sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะทาง & พื้นที่ (ต่อเนื่อง)</h3>
+    <!-- Modal: Measure Tool (อัปเดตระบบ Zoom + Pan Mobile) -->
+    <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-xl w-full max-w-6xl flex flex-col h-[95vh] sm:h-[90vh]">
+            <div class="flex justify-between items-center mb-2 sm:mb-4">
+                <h3 class="font-bold text-base sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะ & พื้นที่ (Zoom Supported)</h3>
                 <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl">✖</button>
             </div>
             
-            <!-- เครื่องมือควบคุมด้านบน -->
-            <div class="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
-                <input type="file" id="measure-file" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded w-full sm:w-64 bg-white" accept="application/pdf">
-                
-                <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none w-full sm:w-auto" onchange="changeMeasurePage()"></select>
-                
-                <div class="h-6 border-l border-slate-300 mx-1 hidden sm:block"></div>
-                
-                <div class="flex items-center gap-2">
-                    <label class="text-[10px] sm:text-sm font-bold text-slate-700 whitespace-nowrap">สเกล 1:</label>
-                    <input type="number" id="measure-scale" value="100" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded w-16 sm:w-20 font-bold bg-white outline-none" onchange="updateMeasureResult()">
-                    <button onclick="clearMeasure()" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[10px] sm:text-sm font-bold transition shadow-sm whitespace-nowrap">🗑 ล้างเส้น</button>
+            <!-- Toolbar ควบคุม -->
+            <div class="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
+                <!-- แถบ 1: ไฟล์และหน้า -->
+                <div class="flex items-center gap-2 w-full lg:w-auto">
+                    <input type="file" id="measure-file" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded flex-1 lg:w-48 bg-white" accept="application/pdf">
+                    <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none" onchange="changeMeasurePage()"></select>
                 </div>
                 
-                <div class="flex-1 flex justify-end flex-col items-end w-full sm:w-auto mt-2 sm:mt-0">
-                    <span class="text-lg sm:text-2xl font-bold text-emerald-600 leading-none mb-1" id="measure-result-dist">ระยะรวม: 0.000 ม.</span>
-                    <span class="text-xs sm:text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: 0.000 ตร.ม.</span>
+                <div class="h-6 border-l border-slate-300 mx-1 hidden lg:block"></div>
+                
+                <!-- แถบ 2: โหมด เลื่อน(Pan) / วาด(Draw) -->
+                <div class="flex bg-slate-200 p-1 rounded-lg w-full sm:w-auto justify-center">
+                    <button id="measure-mode-pan" onclick="setMeasureMode('pan')" class="flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition">✋ เลื่อนดู (Pan)</button>
+                    <button id="measure-mode-draw" onclick="setMeasureMode('draw')" class="flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition">📏 ขีดเส้น (Draw)</button>
+                </div>
+
+                <div class="h-6 border-l border-slate-300 mx-1 hidden lg:block"></div>
+
+                <!-- แถบ 3: Zoom In/Out -->
+                <div class="flex items-center bg-white border border-slate-300 rounded-lg overflow-hidden w-full sm:w-auto">
+                    <button onclick="changeMeasureZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base">-</button>
+                    <span id="measure-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200">100%</span>
+                    <button onclick="changeMeasureZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base">+</button>
+                </div>
+
+                <!-- แถบ 4: สเกลและรีเซ็ต -->
+                <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto justify-between">
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] sm:text-xs font-bold text-slate-700 whitespace-nowrap">Scale 1:</label>
+                        <input type="number" id="measure-scale" value="100" class="border p-1.5 text-xs sm:text-sm rounded w-16 font-bold bg-white outline-none" onchange="updateMeasureResult()">
+                    </div>
+                    <button onclick="clearMeasure()" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition shadow-sm whitespace-nowrap">🗑 ล้างเส้น</button>
+                </div>
+            </div>
+
+            <!-- กล่องแสดงผลลัพธ์ -->
+            <div class="flex justify-between items-center bg-emerald-50 border border-emerald-200 p-2 sm:p-3 rounded-lg mb-2 sm:mb-3 shadow-sm">
+                <span class="text-[10px] sm:text-xs text-slate-600 font-bold">💡 กด Ctrl+Scroll เพื่อซูมด้วยเมาส์ | แตะจุดเริ่มต้นเพื่อคำนวณพื้นที่</span>
+                <div class="text-right flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+                    <div class="text-sm sm:text-xl font-bold text-emerald-600 leading-none" id="measure-result-dist">ระยะ: 0.000 ม.</div>
+                    <div class="text-xs sm:text-sm font-bold text-blue-600 leading-none" id="measure-result-area">พื้นที่: -</div>
                 </div>
             </div>
             
             <!-- กระดานวาด -->
-            <div class="flex-1 bg-slate-300 rounded-lg overflow-auto relative cursor-crosshair border-2 border-slate-300 shadow-inner">
-                <canvas id="measure-canvas" class="block mx-auto shadow-md bg-white"></canvas>
-            </div>
-            
-            <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold">
-                💡 วิธีใช้: "แตะ/คลิก" เพื่อลากเส้นต่อกันไปเรื่อยๆ | แตะที่จุดเริ่มต้นเพื่อบรรจบเส้นและคำนวณ "พื้นที่"
+            <div id="measure-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto relative border-2 border-slate-300 shadow-inner">
+                <!-- Wrapper สำหรับกำหนด Origin -->
+                <div class="min-w-full min-h-full flex items-center justify-center p-4">
+                    <canvas id="measure-canvas" class="block shadow-md bg-white max-w-none transform-origin-top-left"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -369,7 +392,7 @@
                 <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition">✖</button>
             </div>
             <div class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 flex items-start sm:items-center justify-center p-2 sm:p-4 shadow-inner relative">
-                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-full m-auto"></canvas>
+                <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-none m-auto"></canvas>
             </div>
             <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold text-center">
                 💡 สามารถใช้สองนิ้วซูม หรือไถเลื่อนหน้าจอเพื่อดูรายละเอียดได้
@@ -921,6 +944,7 @@
             signRelY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)); 
             updateTargetPos();
         });
+        
         // รองรับการแตะเพื่อวางตรายางบนมือถือ
         previewCanvas.addEventListener('touchstart', (e) => {
             if(e.touches.length > 0) {
@@ -1209,20 +1233,67 @@
         }
 
         // =========================================================
-        // 📏 Measure Tool Logic
+        // 📏 Measure Tool Logic (Zoom & Pan Support)
         // =========================================================
+        const MEASURE_RENDER_SCALE = 2.0; // Render ชัด 2 เท่า
         let measurePdfDocJs = null; 
-        let measureScale = 1.5; 
         let measurePoints = []; 
         let isMeasureClosed = false;
         let mCanvas = document.getElementById('measure-canvas'); 
         let mCtx = mCanvas.getContext('2d'); 
         let mImgData = null;
         let currentMeasurePageNum = 1;
+        let mDisplayZoom = 1.0; 
+        let measureMode = 'pan'; // pan หรือ draw
+        
+        // Panning Variables (for PC mouse drag)
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panScrollLeft = 0;
+        let panScrollTop = 0;
 
         function openMeasureModal() { 
             document.getElementById('modal-measure').classList.remove('hidden'); 
+            setMeasureMode('pan'); // เริ่มต้นด้วยโหมดเลื่อน
         }
+
+        function setMeasureMode(mode) {
+            measureMode = mode;
+            if(mode === 'pan') {
+                document.getElementById('measure-mode-pan').className = "flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition";
+                document.getElementById('measure-mode-draw').className = "flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition";
+                mCanvas.style.cursor = 'grab';
+            } else {
+                document.getElementById('measure-mode-draw').className = "flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition";
+                document.getElementById('measure-mode-pan').className = "flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition";
+                mCanvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function applyMeasureZoom(zoom) {
+            mDisplayZoom = zoom;
+            document.getElementById('measure-zoom-text').textContent = Math.round(mDisplayZoom * 100) + '%';
+            // ปรับขนาดความกว้างที่แสดงผล โดยอิงจากขนาดภาพจริงๆ 
+            mCanvas.style.width = (mCanvas.width / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
+            mCanvas.style.height = (mCanvas.height / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
+        }
+
+        function changeMeasureZoom(delta) {
+            let newZoom = Math.round((mDisplayZoom + delta) * 10) / 10;
+            if (newZoom < 0.2) newZoom = 0.2;
+            if (newZoom > 5.0) newZoom = 5.0;
+            applyMeasureZoom(newZoom);
+        }
+
+        // ซูมด้วยลูกกลิ้งเมาส์ (PC)
+        document.getElementById('measure-scroll-container').addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                changeMeasureZoom(delta);
+            }
+        }, {passive: false});
 
         document.getElementById('measure-file').addEventListener('change', async (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -1259,8 +1330,12 @@
         async function renderMeasurePage(pageNum) {
             clearMeasure();
             const page = await measurePdfDocJs.getPage(pageNum);
-            const viewport = page.getViewport({ scale: measureScale });
-            mCanvas.width = viewport.width; mCanvas.height = viewport.height;
+            const viewport = page.getViewport({ scale: MEASURE_RENDER_SCALE });
+            mCanvas.width = viewport.width; 
+            mCanvas.height = viewport.height;
+            
+            applyMeasureZoom(mDisplayZoom); // ควบคุมขนาดที่แสดง
+
             await page.render({ canvasContext: mCtx, viewport: viewport }).promise;
             mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
         }
@@ -1273,7 +1348,8 @@
         }
 
         function pxToRealMeters(px) {
-            const pdf_pts = px / measureScale; 
+            // คำนวณจาก px ดั้งเดิมที่ Render ไว้ (MEASURE_RENDER_SCALE)
+            const pdf_pts = px / MEASURE_RENDER_SCALE; 
             const mm_on_paper = (pdf_pts / 72.0) * 25.4;
             const userScale = parseFloat(document.getElementById('measure-scale').value) || 100; 
             return (mm_on_paper * userScale) / 1000.0;
@@ -1281,8 +1357,8 @@
 
         function updateMeasureResult() {
             if (measurePoints.length === 0) {
-                document.getElementById('measure-result-dist').textContent = `ระยะรวม: 0.000 ม.`;
-                document.getElementById('measure-result-area').textContent = `พื้นที่: 0.000 ตร.ม.`;
+                document.getElementById('measure-result-dist').textContent = `ระยะ: 0.000 ม.`;
+                document.getElementById('measure-result-area').textContent = `พื้นที่: -`;
                 return;
             }
 
@@ -1295,7 +1371,7 @@
             }
             
             const realDistMeters = pxToRealMeters(totalPxDist);
-            document.getElementById('measure-result-dist').textContent = `ระยะรวม: ${realDistMeters.toFixed(3)} ม.`;
+            document.getElementById('measure-result-dist').textContent = `ระยะ: ${realDistMeters.toFixed(3)} ม.`;
 
             if (isMeasureClosed && measurePoints.length > 2) {
                 let areaPx = 0;
@@ -1313,15 +1389,12 @@
             }
         }
 
-        function handleMeasurePointerEvent(e) {
+        function handleMeasurePointerEvent(clientX, clientY) {
             if (!mImgData || isMeasureClosed) return;
             const rect = mCanvas.getBoundingClientRect();
-            // รองรับทั้ง Mouse และ Touch
-            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            
             if(!clientX || !clientY) return;
 
+            // คืนค่าพิกัดให้เป็นสเกลดั้งเดิมของ Canvas เสมอ แม้ซูมอยู่
             const x = (clientX - rect.left) * (mCanvas.width / rect.width); 
             const y = (clientY - rect.top) * (mCanvas.height / rect.height);
             
@@ -1340,15 +1413,57 @@
             updateMeasureResult();
         }
 
-        mCanvas.addEventListener('click', handleMeasurePointerEvent);
-        // สำหรับ Touch บนมือถืออาจมี Delay ดังนั้นใช้ touchstart ช่วยสำหรับวาด
+        // ============ Mouse Panning & Drawing ============
+        mCanvas.addEventListener('mousedown', (e) => {
+            if (measureMode === 'pan') {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                const container = document.getElementById('measure-scroll-container');
+                panScrollLeft = container.scrollLeft;
+                panScrollTop = container.scrollTop;
+                mCanvas.style.cursor = 'grabbing';
+                return;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning && measureMode === 'pan') {
+                const container = document.getElementById('measure-scroll-container');
+                const dx = e.clientX - panStartX;
+                const dy = e.clientY - panStartY;
+                container.scrollLeft = panScrollLeft - dx;
+                container.scrollTop = panScrollTop - dy;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+                if(measureMode === 'pan') mCanvas.style.cursor = 'grab';
+            }
+        });
+
+        mCanvas.addEventListener('click', (e) => {
+            if (measureMode === 'pan') return; 
+            handleMeasurePointerEvent(e.clientX, e.clientY);
+        });
+
+        // ============ Touch (Mobile) Drawing ============
         mCanvas.addEventListener('touchstart', (e) => { 
-            e.preventDefault(); // ป้องกันการเกิด Click ซ้ำ
-            handleMeasurePointerEvent(e); 
+            // ถ้าเป็นโหมดเลื่อน (Pan) จะปล่อยให้บราวเซอร์ทำงาน Scroll ปกติของมือถือ (ไม่ใส่ preventDefault)
+            if (measureMode === 'pan') return; 
+            
+            e.preventDefault(); 
+            if(e.touches.length > 0) {
+                handleMeasurePointerEvent(e.touches[0].clientX, e.touches[0].clientY);
+            }
         }, {passive: false});
 
         mCanvas.addEventListener('mousemove', (e) => {
+            if (measureMode === 'pan') return;
             if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
+            
             const rect = mCanvas.getBoundingClientRect();
             const x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
             const y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
