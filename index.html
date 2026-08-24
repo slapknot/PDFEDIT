@@ -3,17 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Master Tools - Web Edition</title>
-    <!-- โหลด Tailwind CSS เพื่อความสวยงามแบบ Modern UI -->
+    <title>PDF Master Tools - Pro Web Edition</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- โหลด pdf-lib สำหรับประมวลผล PDF ในเบราว์เซอร์ -->
+    <!-- pdf-lib สำหรับจัดการโครงสร้าง PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <!-- pdf.js สำหรับแปลงหน้า PDF เป็นรูปภาพเพื่อแสดงผล Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .drag-active { border-color: #10B981 !important; background-color: #ECFDF5 !important; }
+        .page-card { transition: all 0.2s ease; }
+        .page-card.selected { border-color: #2563EB !important; ring: 4px; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 transition-colors duration-300">
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
 
     <!-- Top Navigation Bar -->
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
@@ -22,259 +29,283 @@
                 <div class="flex items-center">
                     <span class="text-2xl mr-2">📄</span>
                     <span class="font-bold text-xl text-blue-600">PDF Master Tools</span>
-                    <span class="ml-3 px-2 py-1 bg-slate-100 text-slate-500 text-xs rounded-full">Web Edition</span>
+                    <span class="ml-3 px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Web Interactive Edition</span>
                 </div>
-                <div>
-                    <a href="https://github.com" target="_blank" class="text-sm font-semibold text-slate-500 hover:text-blue-600">GitHub Pages Hosted</a>
+                <div class="flex items-center space-x-4">
+                    <span id="page-counter" class="text-sm font-semibold text-slate-500">ยังไม่ได้โหลดเอกสาร</span>
+                    <button onclick="savePDF()" id="btn-save" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition flex items-center">
+                        💾 บันทึกไฟล์ (Save PDF)
+                    </button>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-6xl mx-auto px-4 py-8">
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full flex flex-col">
         
-        <h1 class="text-2xl font-bold text-slate-800 mb-6">พื้นที่เตรียมไฟล์และเครื่องมือ</h1>
-
-        <!-- Drag & Drop Staging Area -->
-        <div id="drop-zone" class="border-2 border-dashed border-blue-500 rounded-xl bg-white p-10 text-center cursor-pointer hover:bg-blue-50 transition-colors duration-200 relative">
+        <!-- Drop Zone (Staging Area) -->
+        <div id="drop-zone" class="border-2 border-dashed border-blue-500 rounded-xl bg-white p-8 text-center cursor-pointer hover:bg-blue-50 transition-all shadow-sm relative mb-6">
             <input type="file" id="file-input" class="hidden" multiple accept="application/pdf">
             <div id="drop-content">
                 <span class="text-4xl block mb-2">📥</span>
-                <p class="text-blue-600 font-bold text-lg">ลากไฟล์ PDF มาวางที่นี่ (Drag & Drop)</p>
-                <p class="text-slate-400 text-sm mt-1">หรือคลิกเพื่อเลือกไฟล์จากคอมพิวเตอร์ (รองรับการเลือกหลายไฟล์)</p>
+                <p class="text-blue-600 font-bold text-lg">ลากไฟล์ PDF มาวางที่นี่ (Drag & Drop) หรือคลิกเพื่อเปิดไฟล์</p>
+                <p class="text-slate-400 text-sm mt-1">ระบบจะแสดงหน้ากระดาษทั้งหมดให้คุณจัดเรียง ลบ หรือหมุนได้ทันที</p>
             </div>
             
-            <div id="file-info" class="hidden">
-                <span class="text-4xl block mb-2">📑</span>
-                <p id="file-name" class="text-emerald-600 font-bold text-lg">เลือกไฟล์แล้ว 2 ไฟล์</p>
-                <p class="text-slate-500 text-sm mt-1">(คลิกเลือกเครื่องมือด้านล่างเพื่อเริ่มทำงาน)</p>
-            </div>
-
-            <button id="btn-clear" class="hidden absolute top-4 right-4 bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1 rounded-md text-sm font-bold shadow-sm transition">✖ ล้างค่า</button>
-        </div>
-
-        <!-- Processing Status -->
-        <div id="loading" class="hidden mt-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center justify-between shadow-sm">
-            <div class="flex items-center">
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span id="loading-text" class="font-semibold">กำลังประมวลผล PDF...</span>
+            <div id="file-info" class="hidden flex items-center justify-between px-4">
+                <div class="text-left">
+                    <p id="file-name" class="text-slate-800 font-bold text-base">กำลังแสดงผลเอกสาร</p>
+                    <p class="text-slate-500 text-xs mt-0.5">เคล็ดลับ: ใช้เมาส์คลิกเลือกหน้ากระดาษเพื่อจัดการ</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
+                    <button onclick="clearWorkspace()" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">✖ ปิดงานนี้</button>
+                </div>
             </div>
         </div>
 
-        <!-- Tools Grid -->
-        <div class="mt-10">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">🛠️ เครื่องมือพื้นฐาน (ทำงานผ่านเบราว์เซอร์ 100%)</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Card: Merge PDF -->
-                <div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                    <div class="h-1 bg-blue-500 w-full"></div>
-                    <div class="p-6 flex items-start flex-1">
-                        <div class="flex-shrink-0 bg-blue-50 w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4">📑</div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">รวมไฟล์ (Merge PDF)</h3>
-                            <p class="text-sm text-slate-500 mt-1 mb-4">นำไฟล์ PDF หลายๆ ไฟล์ที่เตรียมไว้ มารวมกันเป็นไฟล์เดียวแบบรวดเร็ว</p>
-                            <button onclick="mergePDFs()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
-                                เปิดใช้งาน
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Interactive Toolbar (แสดงเมื่อมีเอกสารโหลดเข้ามา) -->
+        <div id="toolbar" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <button onclick="selectAll()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">☑ เลือกทั้งหมด</button>
+                <button onclick="rotateSelected(90)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">⟳ หมุนหน้า</button>
+                <button onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">🗑 ลบหน้าที่เลือก</button>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">
+                💡 Shift+คลิก เพื่อเลือกช่วงหน้า | Ctrl+คลิก เพื่อเลือกหลายหน้า
+            </div>
+        </div>
 
-                <!-- Card: Split PDF -->
-                <div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                    <div class="h-1 bg-emerald-500 w-full"></div>
-                    <div class="p-6 flex items-start flex-1">
-                        <div class="flex-shrink-0 bg-emerald-50 w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4">✂️</div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">แยกไฟล์ (Split PDF)</h3>
-                            <p class="text-sm text-slate-500 mt-1 mb-4">หั่นไฟล์ PDF ที่เลือกออกเป็นไฟล์ย่อยๆ หน้าละ 1 ไฟล์</p>
-                            <button onclick="splitPDF()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
-                                เปิดใช้งาน
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card: Placeholder 1 -->
-                <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col opacity-60">
-                    <div class="h-1 bg-orange-500 w-full"></div>
-                    <div class="p-6 flex items-start flex-1">
-                        <div class="flex-shrink-0 bg-orange-50 w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4">✍️</div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">ลายเซ็น (Sign PDF)</h3>
-                            <p class="text-sm text-slate-500 mt-1 mb-4">แทรกลายเซ็นบนเว็บ (ฟังก์ชันนี้กำลังพัฒนาในรุ่น Web)</p>
-                            <button class="bg-slate-200 text-slate-400 text-sm font-bold py-2 px-4 rounded-md cursor-not-allowed">
-                                เร็วๆ นี้
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+        <!-- Workspace Grid (พื้นที่แสดง Thumbnail แต่ละหน้ากระดาษ) -->
+        <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 overflow-y-auto flex-1 pb-10">
+            <!-- หน้ากระดาษจะถูกเรนเดอร์มาลงตรงนี้อัตโนมัติ -->
+            <div class="col-span-full text-center py-20 text-slate-400">
+                <p class="text-lg font-medium">ยังไม่มีเอกสารในระบบ</p>
+                <p class="text-sm mt-1">กรุณาลากไฟล์ PDF มาวางด้านบนเพื่อเริ่มต้นใช้งาน</p>
             </div>
         </div>
 
     </main>
 
+    <!-- Loading Overlay -->
+    <div id="loading" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-2xl shadow-xl flex items-center space-x-4">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="loading-text" class="font-bold text-slate-700 text-lg">กำลังประมวลผล...</span>
+        </div>
+    </div>
+
     <script>
-        // ==========================================
-        // 1. ระบบ Drag & Drop และเตรียมไฟล์ (Staging Area)
-        // ==========================================
+        let loadedPages = []; // เก็บข้อมูลแต่ละหน้า [{pdfDocIndex, pageIndex, rotation, originalFileIndex}]
+        let sourcePdfDocs = []; // เก็บต้นฉบับ PDFDocument ของแต่ละไฟล์
+        let selectedIndices = new Set();
+        let lastClickedIndex = null;
+
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const dropContent = document.getElementById('drop-content');
         const fileInfo = document.getElementById('file-info');
-        const fileName = document.getElementById('file-name');
-        const btnClear = document.getElementById('btn-clear');
+        const gridContainer = document.getElementById('grid-container');
+        const toolbar = document.getElementById('toolbar');
+        const btnSave = document.getElementById('btn-save');
+        const pageCounter = document.getElementById('page-counter');
         const loadingBox = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
 
-        let selectedFiles = []; // ตัวแปรเก็บไฟล์ที่ผู้ใช้ลากมาวาง
-
-        // กดที่กล่องเพื่อเปิดหน้าต่างเลือกไฟล์
-        dropZone.addEventListener('click', (e) => {
-            if (e.target !== btnClear) fileInput.click();
-        });
-
-        // เมื่อเลือกไฟล์ผ่านหน้าต่าง
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
         // Drag & Drop Events
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-active');
-        });
-
+        dropZone.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') fileInput.click(); });
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
-
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('drag-active');
             handleFiles(e.dataTransfer.files);
         });
 
-        // จัดการไฟล์ที่ถูกรับเข้ามา
-        function handleFiles(files) {
+        async function handleFiles(files) {
             const validFiles = Array.from(files).filter(file => file.type === 'application/pdf');
-            
-            if (validFiles.length === 0) {
-                alert('กรุณาเลือกไฟล์ PDF เท่านั้นครับ');
-                return;
-            }
+            if (validFiles.length === 0) return alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
 
-            selectedFiles = validFiles;
-            updateUI();
-        }
+            loadingText.textContent = "กำลังโหลดหน้าเอกสาร...";
+            loadingBox.classList.remove('hidden');
 
-        // ปุ่มล้างค่า
-        btnClear.addEventListener('click', (e) => {
-            e.stopPropagation();
-            selectedFiles = [];
-            fileInput.value = "";
-            updateUI();
-        });
+            try {
+                for (let file of validFiles) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    // โหลดด้วย pdf-lib เพื่อเก็บโครงสร้างไว้เซฟ
+                    const pdfDocLib = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const sourceIdx = sourcePdfDocs.length;
+                    sourcePdfDocs.push({ pdfDocLib, arrayBuffer });
 
-        // อัปเดตหน้าตา UI
-        function updateUI() {
-            if (selectedFiles.length > 0) {
+                    // โหลดด้วย pdf.js เพื่อเรนเดอร์ภาพพรีวิว
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const pdfDocJs = await loadingTask.promise;
+
+                    for (let i = 1; i <= pdfDocJs.numPages; i++) {
+                        loadedPages.push({
+                            sourceIdx: sourceIdx,
+                            pageIndex: i - 1,
+                            rotation: 0,
+                            pdfDocJs: pdfDocJs,
+                            pageNumber: i
+                        });
+                    }
+                }
+
                 dropContent.classList.add('hidden');
                 fileInfo.classList.remove('hidden');
-                btnClear.classList.remove('hidden');
+                toolbar.classList.remove('hidden');
+                btnSave.classList.remove('hidden');
                 dropZone.classList.add('border-emerald-500', 'bg-emerald-50');
-                dropZone.classList.remove('border-blue-500');
 
-                if (selectedFiles.length === 1) {
-                    let name = selectedFiles[0].name;
-                    fileName.textContent = "📄 " + (name.length > 40 ? name.substring(0, 37) + "..." : name);
-                } else {
-                    fileName.textContent = `📑 เลือกไฟล์แล้ว ${selectedFiles.length} ไฟล์`;
-                }
+                renderGrid();
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการอ่านไฟล์ PDF");
+            } finally {
+                loadingBox.classList.add('hidden');
+            }
+        }
+
+        async function renderGrid() {
+            gridContainer.innerHTML = '';
+            pageCounter.textContent = `ทั้งหมด: ${loadedPages.length} หน้า`;
+
+            for (let index = 0; index < loadedPages.length; index++) {
+                const pageData = loadedPages[index];
+                const isSelected = selectedIndices.has(index);
+
+                // สร้าง Card ของแต่ละหน้า
+                const card = document.createElement('div');
+                card.className = `page-card bg-white border-2 rounded-xl p-2 cursor-pointer relative flex flex-col items-center shadow-sm ${isSelected ? 'selected border-blue-600 bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
+                card.onclick = (e) => handleCardClick(e, index);
+
+                // Canvas สำหรับแสดงภาพหน้า PDF
+                const canvas = document.createElement('canvas');
+                canvas.className = 'rounded-md shadow-inner bg-slate-100 max-h-40 object-contain';
+                card.appendChild(canvas);
+
+                // ป้ายบอกเลขหน้า
+                const footer = document.createElement('div');
+                footer.className = 'w-full flex justify-between items-center mt-2 px-1 text-xs font-bold text-slate-500';
+                footer.innerHTML = `<span>หน้า ${index + 1}</span><span>P.${pageData.pageNumber}</span>`;
+                card.appendChild(footer);
+
+                gridContainer.appendChild(card);
+
+                // เรนเดอร์หน้า PDF ลง Canvas
+                try {
+                    const page = await pageData.pdfDocJs.getPage(pageData.pageNumber);
+                    const viewport = page.getViewport({ scale: 0.3, rotation: pageData.rotation });
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                } catch (e) { console.error(e); }
+            }
+        }
+
+        function handleCardClick(event, index) {
+            if (event.shiftKey && lastClickedIndex !== null) {
+                const start = Math.min(lastClickedIndex, index);
+                const end = Math.max(lastClickedIndex, index);
+                for (let i = start; i <= end; i++) selectedIndices.add(i);
+            } else if (event.ctrlKey || event.metaKey) {
+                if (selectedIndices.has(index)) selectedIndices.delete(index);
+                else selectedIndices.add(index);
+                lastClickedIndex = index;
             } else {
-                dropContent.classList.remove('hidden');
-                fileInfo.classList.add('hidden');
-                btnClear.classList.add('hidden');
-                dropZone.classList.remove('border-emerald-500', 'bg-emerald-50');
-                dropZone.classList.add('border-blue-500');
+                selectedIndices.clear();
+                selectedIndices.add(index);
+                lastClickedIndex = index;
             }
+            renderGrid();
         }
 
-        // ==========================================
-        // 2. ฟังก์ชันประมวลผล PDF (ทำงานบน Browser 100%)
-        // ==========================================
-
-        async function mergePDFs() {
-            if (selectedFiles.length < 2) {
-                alert("ฟังก์ชันรวมไฟล์ ต้องใช้ไฟล์ PDF ตั้งแต่ 2 ไฟล์ขึ้นไปครับ");
-                return;
+        function selectAll() {
+            if (selectedIndices.size === loadedPages.length) {
+                selectedIndices.clear();
+            } else {
+                selectedIndices = new Set(loadedPages.map((_, i) => i));
             }
+            renderGrid();
+        }
 
-            loadingText.textContent = "กำลังรวมไฟล์ PDF...";
+        function rotateSelected(deg) {
+            if (selectedIndices.size === 0) return alert("กรุณาเลือกหน้าที่ต้องการหมุนก่อนครับ");
+            selectedIndices.forEach(idx => {
+                loadedPages[idx].rotation = (loadedPages[idx].rotation + deg) % 360;
+            });
+            renderGrid();
+        }
+
+        function deleteSelected() {
+            if (selectedIndices.size === 0) return alert("กรุณาเลือกหน้าที่ต้องการลบก่อนครับ");
+            if (loadedPages.length - selectedIndices.size < 1) return alert("ต้องเหลือเอกสารอย่างน้อย 1 หน้า");
+
+            loadedPages = loadedPages.filter((_, idx) => !selectedIndices.has(idx));
+            selectedIndices.clear();
+            lastClickedIndex = null;
+            renderGrid();
+        }
+
+        async function savePDF() {
+            if (loadedPages.length === 0) return;
+
+            loadingText.textContent = "กำลังประกอบและบันทึกไฟล์ PDF...";
             loadingBox.classList.remove('hidden');
 
             try {
-                // เรียกใช้ไลบรารี pdf-lib ที่โหลดมา
                 const { PDFDocument } = PDFLib;
-                const mergedPdf = await PDFDocument.create();
+                const newPdf = await PDFDocument.create();
 
-                // วนลูปอ่านทุกไฟล์ที่ลากมาวาง
-                for (let file of selectedFiles) {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await PDFDocument.load(arrayBuffer);
-                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                // แคชเอกสารต้นฉบับที่โหลดไว้แล้วเพื่อความเร็ว
+                const loadedDocLibs = {};
+                for (let src of sourcePdfDocs) {
+                    loadedDocLibs[sourcePdfDocs.indexOf(src)] = await PDFDocument.load(src.arrayBuffer);
                 }
 
-                // บันทึกและสร้างปุ่มดาวน์โหลด
-                const mergedPdfFile = await mergedPdf.save();
-                downloadFile(mergedPdfFile, "Merged_Document.pdf");
-                
-            } catch (error) {
-                console.error(error);
-                alert("เกิดข้อผิดพลาดในการรวมไฟล์");
-            } finally {
-                loadingBox.classList.add('hidden');
-            }
-        }
-
-        async function splitPDF() {
-            if (selectedFiles.length === 0) {
-                alert("กรุณาเลือกไฟล์ที่ต้องการแยกครับ");
-                return;
-            }
-
-            loadingText.textContent = "กำลังแยกไฟล์ PDF... (จะดาวน์โหลดทีละหน้า)";
-            loadingBox.classList.remove('hidden');
-
-            try {
-                const { PDFDocument } = PDFLib;
-                const file = selectedFiles[0]; // สมมติว่าแยกทีละ 1 ไฟล์แรก
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await PDFDocument.load(arrayBuffer);
-                const pageCount = pdf.getPageCount();
-
-                // วนลูปสร้างไฟล์ใหม่หน้าละ 1 ไฟล์
-                for (let i = 0; i < pageCount; i++) {
-                    const newPdf = await PDFDocument.create();
-                    const [copiedPage] = await newPdf.copyPages(pdf, [i]);
+                for (let pageData of loadedPages) {
+                    const sourceDoc = loadedDocLibs[pageData.sourceIdx];
+                    const [copiedPage] = await newPdf.copyPages(sourceDoc, [pageData.pageIndex]);
+                    
+                    if (pageData.rotation !== 0) {
+                        const currentRot = copiedPage.getRotation().angle;
+                        copiedPage.setRotation(PDFLib.degrees(currentRot + pageData.rotation));
+                    }
                     newPdf.addPage(copiedPage);
-                    const pdfBytes = await newPdf.save();
-                    downloadFile(pdfBytes, `Split_Page_${i + 1}.pdf`);
                 }
 
-            } catch (error) {
-                console.error(error);
-                alert("เกิดข้อผิดพลาดในการแยกไฟล์");
+                const pdfBytes = await newPdf.save();
+                downloadFile(pdfBytes, "Modified_Master_Document.pdf");
+
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการบันทึกไฟล์");
             } finally {
                 loadingBox.classList.add('hidden');
             }
         }
 
-        // Helper สำหรับบังคับเบราว์เซอร์ดาวน์โหลดไฟล์
+        function clearWorkspace() {
+            loadedPages = [];
+            sourcePdfDocs = [];
+            selectedIndices.clear();
+            lastClickedIndex = null;
+            fileInput.value = '';
+            dropContent.classList.remove('hidden');
+            fileInfo.classList.add('hidden');
+            toolbar.classList.add('hidden');
+            btnSave.classList.add('hidden');
+            dropZone.classList.remove('border-emerald-500', 'bg-emerald-50');
+            gridContainer.innerHTML = `<div class="col-span-full text-center py-20 text-slate-400"><p class="text-lg font-medium">ยังไม่มีเอกสารในระบบ</p><p class="text-sm mt-1">กรุณาลากไฟล์ PDF มาวางด้านบนเพื่อเริ่มต้นใช้งาน</p></div>`;
+            pageCounter.textContent = "ยังไม่ได้โหลดเอกสาร";
+        }
+
         function downloadFile(byteArray, fileName) {
             const blob = new Blob([byteArray], { type: "application/pdf" });
             const link = document.createElement('a');
@@ -284,7 +315,6 @@
             link.click();
             document.body.removeChild(link);
         }
-
     </script>
 </body>
 </html>
