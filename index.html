@@ -330,10 +330,10 @@
             
             <!-- Toolbar ควบคุม -->
             <div class="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
-                <!-- แถบ 1: ไฟล์และหน้า -->
+                <!-- แถบ 1: ไฟล์และหน้า (ดึงจากหน้า Workspace หลักแล้ว) -->
                 <div class="flex items-center gap-2 w-full lg:w-auto">
-                    <input type="file" id="measure-file" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded flex-1 lg:w-48 bg-white" accept="application/pdf">
-                    <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold hidden cursor-pointer text-blue-600 outline-none" onchange="changeMeasurePage()"></select>
+                    <span class="text-[10px] sm:text-sm font-bold text-slate-700 whitespace-nowrap">เลือกหน้า:</span>
+                    <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold cursor-pointer text-blue-600 outline-none w-full sm:w-48" onchange="changeMeasurePage()"></select>
                 </div>
                 
                 <div class="h-6 border-l border-slate-300 mx-1 hidden lg:block"></div>
@@ -377,7 +377,6 @@
             
             <!-- กระดานวาด -->
             <div id="measure-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto relative border-2 border-slate-300 shadow-inner">
-                <!-- Wrapper สำหรับกำหนด Origin -->
                 <div class="min-w-full min-h-full flex items-center justify-center p-4">
                     <canvas id="measure-canvas" class="block shadow-md bg-white max-w-none transform-origin-top-left"></canvas>
                 </div>
@@ -853,7 +852,8 @@
         }
 
         async function saveOrganizerPDF() {
-            if (loadedPages.length === 0) return; showLoading("กำลังสร้างไฟล์ PDF ใหม่...");
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
+            showLoading("กำลังสร้างไฟล์ PDF ใหม่...");
             try {
                 const { PDFDocument } = PDFLib; const newPdf = await PDFDocument.create(); const cache = {};
                 for (let i = 0; i < sourcePdfDocs.length; i++) cache[i] = await PDFDocument.load(sourcePdfDocs[i].fileBytes);
@@ -1295,13 +1295,12 @@
         // 📏 Measure Tool Logic (Pro Edition: Zoom, Pan, Ortho, Dimensions)
         // =========================================================
         const MEASURE_RENDER_SCALE = 2.0; // Render ชัด 2 เท่า
-        let measurePdfDocJs = null; 
         let measurePoints = []; 
         let isMeasureClosed = false;
         let mCanvas = document.getElementById('measure-canvas'); 
         let mCtx = mCanvas.getContext('2d'); 
         let mImgData = null;
-        let currentMeasurePageNum = 1;
+        let currentMeasurePageIndex = 0;
         let mDisplayZoom = 1.0; 
         let measureMode = 'pan'; // pan หรือ draw
         
@@ -1317,10 +1316,33 @@
         let initialPinchZoom = 1.0;
 
         function openMeasureModal() { 
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+
             const modal = document.getElementById('modal-measure');
             if(modal) {
                 modal.classList.remove('hidden'); 
                 setMeasureMode('pan'); 
+                
+                const pageSelect = document.getElementById('measure-page');
+                if(pageSelect) {
+                    pageSelect.innerHTML = '';
+                    for(let i=0; i<loadedPages.length; i++) {
+                        const opt = document.createElement('option');
+                        opt.value = i; 
+                        opt.textContent = `แผ่นที่ ${i + 1}`;
+                        pageSelect.appendChild(opt);
+                    }
+                    pageSelect.classList.remove('hidden');
+                    
+                    let targetIdx = 0;
+                    if (selectedIndices.size > 0) {
+                        targetIdx = Array.from(selectedIndices).sort((a,b)=>a-b)[0];
+                    }
+                    pageSelect.value = targetIdx;
+                    currentMeasurePageIndex = targetIdx;
+                    
+                    renderMeasurePage(currentMeasurePageIndex);
+                }
             } else {
                 alert('ไม่พบ HTML ของเครื่องมือวัดระยะ');
             }
@@ -1370,46 +1392,27 @@
             }, {passive: false});
         }
 
-        document.getElementById('measure-file').addEventListener('change', async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            measurePdfDocJs = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-            if (!measurePdfDocJs) return;
-            
-            const pageSelect = document.getElementById('measure-page');
-            if(pageSelect) {
-                pageSelect.innerHTML = '';
-                for(let i=1; i<=measurePdfDocJs.numPages; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.textContent = `แผ่นที่ ${i}`;
-                    pageSelect.appendChild(opt);
-                }
-                if (measurePdfDocJs.numPages > 1) {
-                    pageSelect.classList.remove('hidden');
-                } else {
-                    pageSelect.classList.add('hidden');
-                }
-            }
-            
-            currentMeasurePageNum = 1;
-            await renderMeasurePage(currentMeasurePageNum);
-        });
-
         async function changeMeasurePage() {
             const pageSelect = document.getElementById('measure-page');
             if(!pageSelect) return;
-            const page = parseInt(pageSelect.value);
-            if (page && page !== currentMeasurePageNum) {
-                currentMeasurePageNum = page;
+            const idx = parseInt(pageSelect.value);
+            if (!isNaN(idx) && idx !== currentMeasurePageIndex) {
+                currentMeasurePageIndex = idx;
                 showLoading("กำลังโหลดหน้า...");
-                await renderMeasurePage(page);
+                await renderMeasurePage(idx);
                 hideLoading();
             }
         }
 
-        async function renderMeasurePage(pageNum) {
+        async function renderMeasurePage(index) {
             clearMeasure();
-            const page = await measurePdfDocJs.getPage(pageNum);
-            const viewport = page.getViewport({ scale: MEASURE_RENDER_SCALE });
+            if (loadedPages.length === 0 || !loadedPages[index]) return;
+            
+            const pd = loadedPages[index];
+            const page = await pd.pdfDocJs.getPage(pd.pageNumber);
+            const totalRot = (pd.initialRotation + pd.rotation) % 360;
+            
+            const viewport = page.getViewport({ scale: MEASURE_RENDER_SCALE, rotation: totalRot });
             mCanvas.width = viewport.width; 
             mCanvas.height = viewport.height;
             
