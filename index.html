@@ -175,7 +175,6 @@
     <!-- Modal: Convert & Compress -->
     <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md relative">
-            <!-- ปุ่ม X -->
             <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
             <div class="flex justify-between items-center mb-4 pr-6">
                 <h3 class="font-bold text-lg sm:text-xl text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h3>
@@ -206,7 +205,6 @@
     <!-- Modal: Split Options -->
     <div id="modal-split" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md relative">
-            <!-- ปุ่ม X -->
             <button onclick="document.getElementById('modal-split').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
             <div class="flex justify-between items-center mb-4 pr-6">
                 <h3 class="font-bold text-lg sm:text-xl text-slate-800">✂️ เลือกรูปแบบการแยกไฟล์ (Split)</h3>
@@ -232,7 +230,6 @@
     <!-- Modal: Sign & Stamp -->
     <div id="modal-sign" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col md:flex-row gap-4 sm:gap-6 h-[90vh] md:h-auto relative">
-            <!-- ปุ่ม X -->
             <button onclick="document.getElementById('modal-sign').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
             
             <!-- Left: Settings -->
@@ -325,10 +322,10 @@
 
     <!-- Modal: Measure Tool -->
     <div id="modal-measure" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-xl w-full max-w-6xl flex flex-col h-[95vh] sm:h-[90vh]">
-            <div class="flex justify-between items-center mb-2 sm:mb-4">
+        <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-xl w-full max-w-6xl flex flex-col h-[95vh] sm:h-[90vh] relative">
+            <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
+            <div class="flex justify-between items-center mb-2 sm:mb-4 pr-6">
                 <h3 class="font-bold text-base sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะ & พื้นที่ (Pro Edition)</h3>
-                <button onclick="document.getElementById('modal-measure').classList.add('hidden'); clearMeasure();" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none">✖</button>
             </div>
             
             <!-- Toolbar ควบคุม -->
@@ -391,7 +388,6 @@
     <!-- Modal: Compare Tool -->
     <div id="modal-compare" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-lg relative">
-            <!-- ปุ่ม X -->
             <button onclick="document.getElementById('modal-compare').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
             <div class="flex justify-between items-center mb-4 pr-6">
                 <h3 class="font-bold text-lg sm:text-xl">🗺️ เปรียบเทียบแบบ</h3>
@@ -406,7 +402,7 @@
     <!-- Modal: Large Preview (พรีวิวดูหน้าชัดๆ พร้อม Zoom/Pan) -->
     <div id="modal-preview" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-2 sm:p-4" onclick="closePreviewModal(event)">
         <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl max-w-6xl w-full h-[95vh] flex flex-col relative" onclick="event.stopPropagation()">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 pr-6">
                 <h3 id="preview-modal-title" class="font-bold text-base sm:text-xl text-slate-800">🔍 พรีวิวหน้าเอกสารแบบขยาย</h3>
                 <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     <div class="flex items-center bg-slate-100 border border-slate-300 rounded-lg overflow-hidden">
@@ -414,7 +410,7 @@
                         <span id="preview-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200 py-1.5">100%</span>
                         <button onclick="changePreviewZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-200 font-bold transition text-sm">+</button>
                     </div>
-                    <button onclick="closePreviewModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none">✖</button>
+                    <button onclick="closePreviewModal()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
                 </div>
             </div>
             
@@ -441,10 +437,10 @@
         // =========================================================
         // เริ่มต้นใช้งาน Polyfill สำหรับรองรับ Drag & Drop บน Touch Screens
         // =========================================================
-        MobileDragDrop.polyfill({
-            holdToDrag: 300 // กดค้าง 300ms เพื่อลาก (หากแตะธรรมดาจะถือว่าเลื่อนจอปกติ)
-        });
-        window.addEventListener('touchmove', function() {}, {passive: false});
+        if (typeof MobileDragDrop !== 'undefined') {
+            MobileDragDrop.polyfill({ holdToDrag: 300 });
+            window.addEventListener('touchmove', function() {}, {passive: false});
+        }
 
         // =========================================================
         // Core Logic (Organizer, Undo/Redo, Multi-Select Mode)
@@ -580,7 +576,6 @@
                     card.classList.add('dragging'); 
                 };
                 card.ondragend = (e) => { e.stopPropagation(); card.classList.remove('dragging'); };
-                
                 card.ondragenter = (e) => { e.preventDefault(); };
                 
                 card.ondragover = (e) => { 
@@ -870,7 +865,10 @@
         // =========================================================
         // 🗜️ แปลง & บีบอัด (Convert & Compress Tool)
         // =========================================================
-        function openConvertModal() { if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); document.getElementById('modal-convert').classList.remove('hidden'); }
+        function openConvertModal() { 
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
+            document.getElementById('modal-convert').classList.remove('hidden'); 
+        }
         async function executeConvert() {
             document.getElementById('modal-convert').classList.add('hidden');
             const mode = document.querySelector('input[name="convert-mode"]:checked').value;
@@ -902,7 +900,10 @@
         // =========================================================
         // ✂️ แยกไฟล์ (Split Tool)
         // =========================================================
-        function openSplitModal() { if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); document.getElementById('modal-split').classList.remove('hidden'); }
+        function openSplitModal() { 
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
+            document.getElementById('modal-split').classList.remove('hidden'); 
+        }
         async function executeSplit(mode) {
             document.getElementById('modal-split').classList.add('hidden'); let rangesToExtract = []; 
             if (mode === 'single') {
@@ -1291,6 +1292,452 @@
         }
 
         // =========================================================
+        // 📏 Measure Tool Logic (Pro Edition: Zoom, Pan, Ortho, Dimensions)
+        // =========================================================
+        const MEASURE_RENDER_SCALE = 2.0; // Render ชัด 2 เท่า
+        let measurePdfDocJs = null; 
+        let measurePoints = []; 
+        let isMeasureClosed = false;
+        let mCanvas = document.getElementById('measure-canvas'); 
+        let mCtx = mCanvas.getContext('2d'); 
+        let mImgData = null;
+        let currentMeasurePageNum = 1;
+        let mDisplayZoom = 1.0; 
+        let measureMode = 'pan'; // pan หรือ draw
+        
+        // Panning & Pinch Variables
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panScrollLeft = 0;
+        let panScrollTop = 0;
+
+        let isPinching = false;
+        let initialPinchDist = 0;
+        let initialPinchZoom = 1.0;
+
+        function openMeasureModal() { 
+            const modal = document.getElementById('modal-measure');
+            if(modal) {
+                modal.classList.remove('hidden'); 
+                setMeasureMode('pan'); 
+            } else {
+                alert('ไม่พบ HTML ของเครื่องมือวัดระยะ');
+            }
+        }
+
+        function setMeasureMode(mode) {
+            measureMode = mode;
+            const btnPan = document.getElementById('measure-mode-pan');
+            const btnDraw = document.getElementById('measure-mode-draw');
+            if (btnPan && btnDraw) {
+                if(mode === 'pan') {
+                    btnPan.className = "flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition";
+                    btnDraw.className = "flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition";
+                    mCanvas.style.cursor = 'grab';
+                } else {
+                    btnDraw.className = "flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition";
+                    btnPan.className = "flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition";
+                    mCanvas.style.cursor = 'crosshair';
+                }
+            }
+        }
+
+        function applyMeasureZoom(zoom) {
+            mDisplayZoom = zoom;
+            const zoomText = document.getElementById('measure-zoom-text');
+            if(zoomText) zoomText.textContent = Math.round(mDisplayZoom * 100) + '%';
+            mCanvas.style.width = (mCanvas.width / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
+            mCanvas.style.height = (mCanvas.height / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
+        }
+
+        function changeMeasureZoom(delta) {
+            let newZoom = Math.round((mDisplayZoom + delta) * 10) / 10;
+            if (newZoom < 0.2) newZoom = 0.2;
+            if (newZoom > 5.0) newZoom = 5.0;
+            applyMeasureZoom(newZoom);
+        }
+
+        // ซูมด้วยลูกกลิ้งเมาส์ (PC)
+        const mScrollContainer = document.getElementById('measure-scroll-container');
+        if(mScrollContainer) {
+            mScrollContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    changeMeasureZoom(delta);
+                }
+            }, {passive: false});
+        }
+
+        document.getElementById('measure-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            measurePdfDocJs = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+            if (!measurePdfDocJs) return;
+            
+            const pageSelect = document.getElementById('measure-page');
+            if(pageSelect) {
+                pageSelect.innerHTML = '';
+                for(let i=1; i<=measurePdfDocJs.numPages; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.textContent = `แผ่นที่ ${i}`;
+                    pageSelect.appendChild(opt);
+                }
+                if (measurePdfDocJs.numPages > 1) {
+                    pageSelect.classList.remove('hidden');
+                } else {
+                    pageSelect.classList.add('hidden');
+                }
+            }
+            
+            currentMeasurePageNum = 1;
+            await renderMeasurePage(currentMeasurePageNum);
+        });
+
+        async function changeMeasurePage() {
+            const pageSelect = document.getElementById('measure-page');
+            if(!pageSelect) return;
+            const page = parseInt(pageSelect.value);
+            if (page && page !== currentMeasurePageNum) {
+                currentMeasurePageNum = page;
+                showLoading("กำลังโหลดหน้า...");
+                await renderMeasurePage(page);
+                hideLoading();
+            }
+        }
+
+        async function renderMeasurePage(pageNum) {
+            clearMeasure();
+            const page = await measurePdfDocJs.getPage(pageNum);
+            const viewport = page.getViewport({ scale: MEASURE_RENDER_SCALE });
+            mCanvas.width = viewport.width; 
+            mCanvas.height = viewport.height;
+            
+            applyMeasureZoom(mDisplayZoom);
+
+            await page.render({ canvasContext: mCtx, viewport: viewport }).promise;
+            mImgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
+        }
+
+        function clearMeasure() {
+            measurePoints = [];
+            isMeasureClosed = false;
+            if(mImgData) mCtx.putImageData(mImgData, 0, 0);
+            updateMeasureResult();
+        }
+
+        function pxToRealMeters(px) {
+            const pdf_pts = px / MEASURE_RENDER_SCALE; 
+            const mm_on_paper = (pdf_pts / 72.0) * 25.4;
+            const scaleInput = document.getElementById('measure-scale');
+            const userScale = scaleInput ? (parseFloat(scaleInput.value) || 100) : 100; 
+            return (mm_on_paper * userScale) / 1000.0;
+        }
+
+        function getOrthoPoint(p1, p2) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            // Lock to 0, 45, 90 degrees...
+            const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+            const dist = Math.hypot(dx, dy);
+            return {
+                x: p1.x + dist * Math.cos(snappedAngle),
+                y: p1.y + dist * Math.sin(snappedAngle)
+            };
+        }
+
+        function updateMeasureResult() {
+            const distEl = document.getElementById('measure-result-dist');
+            const areaEl = document.getElementById('measure-result-area');
+            if(!distEl || !areaEl) return;
+
+            if (measurePoints.length === 0) {
+                distEl.textContent = `ระยะรวม: 0.000 ม.`;
+                areaEl.textContent = `พื้นที่: -`;
+                return;
+            }
+
+            let totalPxDist = 0;
+            for (let i = 1; i < measurePoints.length; i++) {
+                totalPxDist += Math.hypot(measurePoints[i].x - measurePoints[i-1].x, measurePoints[i].y - measurePoints[i-1].y);
+            }
+            if (isMeasureClosed && measurePoints.length > 2) {
+                totalPxDist += Math.hypot(measurePoints[0].x - measurePoints[measurePoints.length-1].x, measurePoints[0].y - measurePoints[measurePoints.length-1].y);
+            }
+            
+            const realDistMeters = pxToRealMeters(totalPxDist);
+            distEl.textContent = `ระยะรวม: ${realDistMeters.toFixed(3)} ม.`;
+
+            if (isMeasureClosed && measurePoints.length > 2) {
+                let areaPx = 0;
+                let pts = [...measurePoints, measurePoints[0]]; 
+                for (let i = 0; i < pts.length - 1; i++) {
+                    areaPx += (pts[i].x * pts[i+1].y - pts[i+1].x * pts[i].y);
+                }
+                areaPx = Math.abs(areaPx / 2.0);
+                
+                const conversionFactor = pxToRealMeters(1);
+                const realArea = areaPx * (conversionFactor * conversionFactor);
+                areaEl.textContent = `พื้นที่: ${realArea.toFixed(3)} ตร.ม.`;
+            } else {
+                areaEl.textContent = `พื้นที่: -`;
+            }
+        }
+
+        function handleMeasurePointerEvent(clientX, clientY, isShift) {
+            if (!mImgData || isMeasureClosed) return;
+            const rect = mCanvas.getBoundingClientRect();
+            if(!clientX || !clientY) return;
+
+            let x = (clientX - rect.left) * (mCanvas.width / rect.width); 
+            let y = (clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            // ใช้ Ortho (ลากเส้นตรง 45/90 องศา) ถ้ากด Shift ค้าง
+            if (isShift && measurePoints.length > 0) {
+                const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                x = orthoPt.x; 
+                y = orthoPt.y;
+            }
+            
+            if (measurePoints.length > 2) {
+                const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
+                if (distToFirst < 15) { 
+                    isMeasureClosed = true;
+                    redrawMeasure(x, y); 
+                    updateMeasureResult();
+                    return;
+                }
+            }
+            
+            measurePoints.push({x, y});
+            redrawMeasure(x, y);
+            updateMeasureResult();
+        }
+
+        // ============ Mouse Panning & Drawing ============
+        mCanvas.addEventListener('mousedown', (e) => {
+            if (measureMode === 'pan') {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                if(mScrollContainer) {
+                    panScrollLeft = mScrollContainer.scrollLeft;
+                    panScrollTop = mScrollContainer.scrollTop;
+                }
+                mCanvas.style.cursor = 'grabbing';
+                return;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning && measureMode === 'pan' && mScrollContainer) {
+                const dx = e.clientX - panStartX;
+                const dy = e.clientY - panStartY;
+                mScrollContainer.scrollLeft = panScrollLeft - dx;
+                mScrollContainer.scrollTop = panScrollTop - dy;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+                if(measureMode === 'pan') mCanvas.style.cursor = 'grab';
+            }
+        });
+
+        mCanvas.addEventListener('click', (e) => {
+            if (measureMode === 'pan') return; 
+            handleMeasurePointerEvent(e.clientX, e.clientY, e.shiftKey);
+        });
+
+        // ============ Touch (Mobile) Pinch Zoom & Drawing ============
+        mCanvas.addEventListener('touchstart', (e) => { 
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                isPinching = true;
+                initialPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialPinchZoom = mDisplayZoom;
+                return;
+            }
+
+            if (measureMode === 'pan') return; 
+            
+            e.preventDefault(); 
+            if(e.touches.length === 1 && !isPinching) {
+                handleMeasurePointerEvent(e.touches[0].clientX, e.touches[0].clientY, e.shiftKey);
+            }
+        }, {passive: false});
+
+        mCanvas.addEventListener('touchmove', (e) => {
+            // ระบบ Pinch-to-Zoom (ใช้ 2 นิ้วถ่างเข้าออก)
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault();
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                let newZoom = initialPinchZoom * (currentDist / initialPinchDist);
+                newZoom = Math.max(0.2, Math.min(newZoom, 5.0));
+                applyMeasureZoom(newZoom);
+                return;
+            }
+
+            if (measureMode === 'pan') return;
+            if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
+            
+            if (e.touches.length === 1 && !isPinching) {
+                e.preventDefault();
+                const rect = mCanvas.getBoundingClientRect();
+                let x = (e.touches[0].clientX - rect.left) * (mCanvas.width / rect.width); 
+                let y = (e.touches[0].clientY - rect.top) * (mCanvas.height / rect.height);
+                
+                if (e.shiftKey && measurePoints.length > 0) {
+                    const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                    x = orthoPt.x; y = orthoPt.y;
+                }
+                redrawMeasure(x, y);
+            }
+        }, {passive: false});
+
+        mCanvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+            }
+        });
+
+        mCanvas.addEventListener('mousemove', (e) => {
+            if (measureMode === 'pan') return;
+            if (!mImgData || isMeasureClosed || measurePoints.length === 0) return;
+            
+            const rect = mCanvas.getBoundingClientRect();
+            let x = (e.clientX - rect.left) * (mCanvas.width / rect.width); 
+            let y = (e.clientY - rect.top) * (mCanvas.height / rect.height);
+            
+            if (e.shiftKey && measurePoints.length > 0) {
+                const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
+                x = orthoPt.x; 
+                y = orthoPt.y;
+            }
+            
+            let snapX = x, snapY = y;
+            if (measurePoints.length > 2) {
+                const distToFirst = Math.hypot(x - measurePoints[0].x, y - measurePoints[0].y);
+                if (distToFirst < 15) {
+                    snapX = measurePoints[0].x;
+                    snapY = measurePoints[0].y;
+                    mCanvas.style.cursor = 'pointer';
+                } else {
+                    mCanvas.style.cursor = 'crosshair';
+                }
+            }
+            redrawMeasure(snapX, snapY);
+        });
+
+        // ฟังก์ชันวาดป้ายกำกับระยะ (Distance Label)
+        function drawDimension(p1, p2) {
+            const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            if (distPx < 1) return;
+            
+            const distM = pxToRealMeters(distPx);
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            mCtx.save();
+            mCtx.translate(midX, midY);
+            // พลิกตัวอักษรไม่ให้กลับหัว
+            if (angle > Math.PI/2 || angle < -Math.PI/2) { angle += Math.PI; }
+            mCtx.rotate(angle);
+            
+            const text = distM.toFixed(3) + " ม.";
+            mCtx.font = "bold 14px 'Segoe UI', Arial, sans-serif";
+            const textWidth = mCtx.measureText(text).width;
+            
+            // วาดพื้นหลังกล่องข้อความ
+            mCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            mCtx.fillRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
+            
+            // วาดขอบกล่องข้อความ
+            mCtx.strokeStyle = "#10B981"; // Emerald
+            mCtx.lineWidth = 1.5;
+            mCtx.strokeRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
+            
+            // วาดตัวอักษร
+            mCtx.fillStyle = "#0F766E"; // Dark Emerald
+            mCtx.textAlign = "center";
+            mCtx.textBaseline = "bottom";
+            mCtx.fillText(text, 0, -5);
+            mCtx.restore();
+        }
+
+        function redrawMeasure(mouseX, mouseY) {
+            if(!mImgData) return;
+            mCtx.putImageData(mImgData, 0, 0);
+            if (measurePoints.length === 0) return;
+
+            // ถมสีพื้นที่
+            if (isMeasureClosed && measurePoints.length > 2) {
+                mCtx.beginPath();
+                mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
+                for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
+                mCtx.closePath();
+                mCtx.fillStyle = "rgba(16, 185, 129, 0.25)"; 
+                mCtx.fill();
+            }
+
+            // วาดเส้นต่อจุด
+            mCtx.beginPath();
+            mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
+            for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
+            
+            if (isMeasureClosed) {
+                mCtx.closePath();
+            } else if (mouseX !== undefined && mouseY !== undefined) {
+                mCtx.lineTo(mouseX, mouseY);
+            }
+            
+            mCtx.strokeStyle = "#EF4444"; 
+            mCtx.lineWidth = 3;
+            mCtx.lineJoin = "round";
+            mCtx.lineCap = "round";
+            mCtx.stroke();
+
+            // วาดจุดกึ่งกลาง (Vertex)
+            mCtx.fillStyle = "#3B82F6"; 
+            for(let pt of measurePoints) {
+                mCtx.beginPath();
+                mCtx.arc(pt.x, pt.y, 4, 0, 2*Math.PI);
+                mCtx.fill();
+            }
+            
+            // วาด Label บอกระยะบนแต่ละเส้น
+            for(let i=0; i<measurePoints.length - 1; i++) {
+                drawDimension(measurePoints[i], measurePoints[i+1]);
+            }
+            if (isMeasureClosed && measurePoints.length > 2) {
+                drawDimension(measurePoints[measurePoints.length - 1], measurePoints[0]);
+            } else if (!isMeasureClosed && mouseX !== undefined && mouseY !== undefined) {
+                drawDimension(measurePoints[measurePoints.length - 1], {x: mouseX, y: mouseY});
+            }
+
+            // วงกลมแจ้งเตือน (Snap Guide)
+            if (!isMeasureClosed && measurePoints.length > 2 && mouseX !== undefined) {
+                 const distToFirst = Math.hypot(mouseX - measurePoints[0].x, mouseY - measurePoints[0].y);
+                 if (distToFirst < 15 || (mouseX === measurePoints[0].x && mouseY === measurePoints[0].y)) {
+                    mCtx.beginPath();
+                    mCtx.arc(measurePoints[0].x, measurePoints[0].y, 9, 0, 2*Math.PI);
+                    mCtx.strokeStyle = "#10B981"; 
+                    mCtx.lineWidth = 2;
+                    mCtx.stroke();
+                 }
+            }
+        }
+
+        // =========================================================
         // 🔍 Preview Modal Logic (ซูมและเลื่อนดูหน้าชัดๆ)
         // =========================================================
         const PREVIEW_RENDER_SCALE = 2.0;
@@ -1308,6 +1755,7 @@
             const modal = document.getElementById('modal-preview');
             const canvas = document.getElementById('preview-modal-canvas');
             const title = document.getElementById('preview-modal-title');
+            if(!modal || !canvas || !title) return;
             
             modal.classList.remove('hidden');
             title.textContent = `🔍 พรีวิวหน้าเอกสาร (แผ่นที่ ${index + 1})`;
@@ -1340,16 +1788,20 @@
 
         function closePreviewModal(e) {
             if (!e || e.target.id === 'modal-preview') {
-                document.getElementById('modal-preview').classList.add('hidden');
+                const modal = document.getElementById('modal-preview');
+                if(modal) modal.classList.add('hidden');
             }
         }
 
         function applyPreviewZoom(zoom) {
             pDisplayZoom = zoom;
-            document.getElementById('preview-zoom-text').textContent = Math.round(pDisplayZoom * 100) + '%';
+            const zoomText = document.getElementById('preview-zoom-text');
+            if(zoomText) zoomText.textContent = Math.round(pDisplayZoom * 100) + '%';
             const canvas = document.getElementById('preview-modal-canvas');
-            canvas.style.width = (canvas.width / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
-            canvas.style.height = (canvas.height / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+            if(canvas) {
+                canvas.style.width = (canvas.width / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+                canvas.style.height = (canvas.height / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+            }
         }
 
         function changePreviewZoom(delta) {
@@ -1360,79 +1812,88 @@
         }
 
         const pContainer = document.getElementById('preview-scroll-container');
+        if(pContainer) {
+            // เมาส์: หมุนลูกกลิ้งซูม
+            pContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    changePreviewZoom(delta);
+                }
+            }, {passive: false});
 
-        // เมาส์: หมุนลูกกลิ้งซูม
-        pContainer.addEventListener('wheel', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                changePreviewZoom(delta);
-            }
-        }, {passive: false});
+            // เมาส์: กดคลิกแล้วลากเพื่อเลื่อนหน้า
+            pContainer.addEventListener('mousedown', (e) => {
+                pIsPanning = true;
+                pPanStartX = e.clientX;
+                pPanStartY = e.clientY;
+                pPanScrollLeft = pContainer.scrollLeft;
+                pPanScrollTop = pContainer.scrollTop;
+                pContainer.classList.remove('cursor-grab');
+                pContainer.classList.add('cursor-grabbing');
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (pIsPanning) {
+                    const dx = e.clientX - pPanStartX;
+                    const dy = e.clientY - pPanStartY;
+                    pContainer.scrollLeft = pPanScrollLeft - dx;
+                    pContainer.scrollTop = pPanScrollTop - dy;
+                }
+            });
+            window.addEventListener('mouseup', () => {
+                if (pIsPanning) {
+                    pIsPanning = false;
+                    pContainer.classList.remove('cursor-grabbing');
+                    pContainer.classList.add('cursor-grab');
+                }
+            });
 
-        // เมาส์: กดคลิกแล้วลากเพื่อเลื่อนหน้า
-        pContainer.addEventListener('mousedown', (e) => {
-            pIsPanning = true;
-            pPanStartX = e.clientX;
-            pPanStartY = e.clientY;
-            pPanScrollLeft = pContainer.scrollLeft;
-            pPanScrollTop = pContainer.scrollTop;
-            pContainer.classList.remove('cursor-grab');
-            pContainer.classList.add('cursor-grabbing');
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (pIsPanning) {
-                const dx = e.clientX - pPanStartX;
-                const dy = e.clientY - pPanStartY;
-                pContainer.scrollLeft = pPanScrollLeft - dx;
-                pContainer.scrollTop = pPanScrollTop - dy;
-            }
-        });
-        window.addEventListener('mouseup', () => {
-            if (pIsPanning) {
-                pIsPanning = false;
-                pContainer.classList.remove('cursor-grabbing');
-                pContainer.classList.add('cursor-grab');
-            }
-        });
+            // มือถือ: ใช้ 2 นิ้วถ่างเข้า-ออกเพื่อซูม
+            pContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    pIsPinching = true;
+                    pInitialPinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    pInitialPinchZoom = pDisplayZoom;
+                }
+            }, {passive: false});
 
-        // มือถือ: ใช้ 2 นิ้วถ่างเข้า-ออกเพื่อซูม
-        pContainer.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                pIsPinching = true;
-                pInitialPinchDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                pInitialPinchZoom = pDisplayZoom;
-            }
-        }, {passive: false});
+            pContainer.addEventListener('touchmove', (e) => {
+                if (pIsPinching && e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    let newZoom = pInitialPinchZoom * (currentDist / pInitialPinchDist);
+                    newZoom = Math.max(0.2, Math.min(newZoom, 5.0));
+                    applyPreviewZoom(newZoom);
+                }
+            }, {passive: false});
 
-        pContainer.addEventListener('touchmove', (e) => {
-            if (pIsPinching && e.touches.length === 2) {
-                e.preventDefault();
-                const currentDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                let newZoom = pInitialPinchZoom * (currentDist / pInitialPinchDist);
-                newZoom = Math.max(0.2, Math.min(newZoom, 5.0));
-                applyPreviewZoom(newZoom);
-            }
-        }, {passive: false});
-
-        pContainer.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) {
-                pIsPinching = false;
-            }
-        });
+            pContainer.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    pIsPinching = false;
+                }
+            });
+        }
 
         // =========================================================
         // Utilities
         // =========================================================
-        function showLoading(msg) { loadingText.textContent = msg; loadingBox.classList.remove('hidden'); }
-        function hideLoading() { loadingBox.classList.add('hidden'); }
+        function showLoading(msg) { 
+            const lText = document.getElementById('loading-text');
+            const lBox = document.getElementById('loading');
+            if(lText) lText.textContent = msg; 
+            if(lBox) lBox.classList.remove('hidden'); 
+        }
+        function hideLoading() { 
+            const lBox = document.getElementById('loading');
+            if(lBox) lBox.classList.add('hidden'); 
+        }
         function clearWorkspace() { location.reload(); }
         function downloadFile(data, fileName, type="application/pdf") {
             const blob = data instanceof Blob ? data : new Blob([data], { type });
