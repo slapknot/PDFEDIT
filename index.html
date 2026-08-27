@@ -330,7 +330,7 @@
             
             <!-- Toolbar ควบคุม -->
             <div class="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
-                <!-- แถบ 1: ไฟล์และหน้า (ดึงจากหน้า Workspace หลักแล้ว) -->
+                <!-- แถบ 1: เลือกหน้า (ดึงจากไฟล์หน้าหลัก) -->
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     <span class="text-[10px] sm:text-sm font-bold text-slate-700 whitespace-nowrap">เลือกหน้า:</span>
                     <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold cursor-pointer text-blue-600 outline-none w-full sm:w-48" onchange="changeMeasurePage()"></select>
@@ -375,10 +375,10 @@
                 </div>
             </div>
             
-            <!-- กระดานวาด -->
+            <!-- กระดานวาด (แก้ไขโครงสร้าง CSS ป้องกันการโดนตัดขอบเมื่อซูม) -->
             <div id="measure-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto relative border-2 border-slate-300 shadow-inner">
-                <div class="min-w-full min-h-full flex items-center justify-center p-4">
-                    <canvas id="measure-canvas" class="block shadow-md bg-white max-w-none transform-origin-top-left"></canvas>
+                <div class="w-max h-max min-w-full min-h-full flex p-2 sm:p-4">
+                    <canvas id="measure-canvas" class="m-auto block shadow-md bg-white max-w-none"></canvas>
                 </div>
             </div>
         </div>
@@ -405,17 +405,17 @@
                 <h3 id="preview-modal-title" class="font-bold text-base sm:text-xl text-slate-800">🔍 พรีวิวหน้าเอกสารแบบขยาย</h3>
                 <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     <div class="flex items-center bg-slate-100 border border-slate-300 rounded-lg overflow-hidden">
-                        <button onclick="changePreviewZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-200 font-bold transition text-sm">-</button>
+                        <button onclick="changePreviewZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-200 font-bold transition text-sm w-10">-</button>
                         <span id="preview-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200 py-1.5">100%</span>
-                        <button onclick="changePreviewZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-200 font-bold transition text-sm">+</button>
+                        <button onclick="changePreviewZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-200 font-bold transition text-sm w-10">+</button>
                     </div>
                     <button onclick="closePreviewModal()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
                 </div>
             </div>
             
-            <div id="preview-scroll-container" class="flex-1 overflow-auto bg-slate-300 rounded-lg border-2 border-slate-300 shadow-inner relative cursor-grab">
-                <div class="min-w-full min-h-full flex items-center justify-center p-4">
-                    <canvas id="preview-modal-canvas" class="block shadow-md bg-white max-w-none transform-origin-top-left"></canvas>
+            <div id="preview-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto border-2 border-slate-300 shadow-inner relative cursor-grab">
+                <div class="w-max h-max min-w-full min-h-full flex p-2 sm:p-4">
+                    <canvas id="preview-modal-canvas" class="m-auto block shadow-md bg-white max-w-none"></canvas>
                 </div>
             </div>
             <div class="text-[10px] sm:text-xs text-slate-500 mt-2 sm:mt-3 font-bold text-center">
@@ -754,7 +754,7 @@
         }
 
         // =========================================================
-        // 🚀 Helper: Perfect Append Processed Page (Exact Rotation Sync + CropBox Support)
+        // 🚀 Helper: Perfect Append Processed Page
         // =========================================================
         async function appendProcessedPage(newPdf, sourcePdf, pd) {
             const [copiedPage] = await newPdf.copyPages(sourcePdf, [pd.pageIndex]);
@@ -1294,7 +1294,7 @@
         // =========================================================
         // 📏 Measure Tool Logic (Pro Edition: Zoom, Pan, Ortho, Dimensions)
         // =========================================================
-        const MEASURE_RENDER_SCALE = 2.0; // Render ชัด 2 เท่า
+        const MEASURE_RENDER_SCALE = 2.0; 
         let measurePoints = []; 
         let isMeasureClosed = false;
         let mCanvas = document.getElementById('measure-canvas'); 
@@ -1302,9 +1302,8 @@
         let mImgData = null;
         let currentMeasurePageIndex = 0;
         let mDisplayZoom = 1.0; 
-        let measureMode = 'pan'; // pan หรือ draw
+        let measureMode = 'pan'; 
         
-        // Panning & Pinch Variables
         let isPanning = false;
         let panStartX = 0;
         let panStartY = 0;
@@ -1343,8 +1342,6 @@
                     
                     renderMeasurePage(currentMeasurePageIndex);
                 }
-            } else {
-                alert('ไม่พบ HTML ของเครื่องมือวัดระยะ');
             }
         }
 
@@ -1366,11 +1363,28 @@
         }
 
         function applyMeasureZoom(zoom) {
+            const container = document.getElementById('measure-scroll-container');
+            const oldScrollLeft = container ? container.scrollLeft : 0;
+            const oldScrollTop = container ? container.scrollTop : 0;
+            const oldWidth = mCanvas.offsetWidth;
+            const oldHeight = mCanvas.offsetHeight;
+
             mDisplayZoom = zoom;
             const zoomText = document.getElementById('measure-zoom-text');
             if(zoomText) zoomText.textContent = Math.round(mDisplayZoom * 100) + '%';
+            
             mCanvas.style.width = (mCanvas.width / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
             mCanvas.style.height = (mCanvas.height / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
+
+            const newWidth = mCanvas.offsetWidth;
+            const newHeight = mCanvas.offsetHeight;
+
+            // รักษาระยะโฟกัสให้อยู่ตรงกลางตอนซูม
+            if (container && oldWidth > 0 && newWidth !== oldWidth) {
+                const ratio = newWidth / oldWidth;
+                container.scrollLeft = (oldScrollLeft + container.clientWidth / 2) * ratio - container.clientWidth / 2;
+                container.scrollTop = (oldScrollTop + container.clientHeight / 2) * ratio - container.clientHeight / 2;
+            }
         }
 
         function changeMeasureZoom(delta) {
@@ -1380,7 +1394,6 @@
             applyMeasureZoom(newZoom);
         }
 
-        // ซูมด้วยลูกกลิ้งเมาส์ (PC)
         const mScrollContainer = document.getElementById('measure-scroll-container');
         if(mScrollContainer) {
             mScrollContainer.addEventListener('wheel', (e) => {
@@ -1441,7 +1454,6 @@
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
             const angle = Math.atan2(dy, dx);
-            // Lock to 0, 45, 90 degrees...
             const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
             const dist = Math.hypot(dx, dy);
             return {
@@ -1496,7 +1508,6 @@
             let x = (clientX - rect.left) * (mCanvas.width / rect.width); 
             let y = (clientY - rect.top) * (mCanvas.height / rect.height);
             
-            // ใช้ Ortho (ลากเส้นตรง 45/90 องศา) ถ้ากด Shift ค้าง
             if (isShift && measurePoints.length > 0) {
                 const orthoPt = getOrthoPoint(measurePoints[measurePoints.length - 1], {x, y});
                 x = orthoPt.x; 
@@ -1576,7 +1587,6 @@
         }, {passive: false});
 
         mCanvas.addEventListener('touchmove', (e) => {
-            // ระบบ Pinch-to-Zoom (ใช้ 2 นิ้วถ่างเข้าออก)
             if (isPinching && e.touches.length === 2) {
                 e.preventDefault();
                 const currentDist = Math.hypot(
@@ -1640,7 +1650,6 @@
             redrawMeasure(snapX, snapY);
         });
 
-        // ฟังก์ชันวาดป้ายกำกับระยะ (Distance Label)
         function drawDimension(p1, p2) {
             const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
             if (distPx < 1) return;
@@ -1652,7 +1661,6 @@
 
             mCtx.save();
             mCtx.translate(midX, midY);
-            // พลิกตัวอักษรไม่ให้กลับหัว
             if (angle > Math.PI/2 || angle < -Math.PI/2) { angle += Math.PI; }
             mCtx.rotate(angle);
             
@@ -1660,17 +1668,14 @@
             mCtx.font = "bold 14px 'Segoe UI', Arial, sans-serif";
             const textWidth = mCtx.measureText(text).width;
             
-            // วาดพื้นหลังกล่องข้อความ
             mCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
             mCtx.fillRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
             
-            // วาดขอบกล่องข้อความ
-            mCtx.strokeStyle = "#10B981"; // Emerald
+            mCtx.strokeStyle = "#10B981"; 
             mCtx.lineWidth = 1.5;
             mCtx.strokeRect(-textWidth/2 - 4, -22, textWidth + 8, 18);
             
-            // วาดตัวอักษร
-            mCtx.fillStyle = "#0F766E"; // Dark Emerald
+            mCtx.fillStyle = "#0F766E"; 
             mCtx.textAlign = "center";
             mCtx.textBaseline = "bottom";
             mCtx.fillText(text, 0, -5);
@@ -1682,7 +1687,6 @@
             mCtx.putImageData(mImgData, 0, 0);
             if (measurePoints.length === 0) return;
 
-            // ถมสีพื้นที่
             if (isMeasureClosed && measurePoints.length > 2) {
                 mCtx.beginPath();
                 mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
@@ -1692,7 +1696,6 @@
                 mCtx.fill();
             }
 
-            // วาดเส้นต่อจุด
             mCtx.beginPath();
             mCtx.moveTo(measurePoints[0].x, measurePoints[0].y);
             for(let i=1; i<measurePoints.length; i++) mCtx.lineTo(measurePoints[i].x, measurePoints[i].y);
@@ -1709,7 +1712,6 @@
             mCtx.lineCap = "round";
             mCtx.stroke();
 
-            // วาดจุดกึ่งกลาง (Vertex)
             mCtx.fillStyle = "#3B82F6"; 
             for(let pt of measurePoints) {
                 mCtx.beginPath();
@@ -1717,7 +1719,6 @@
                 mCtx.fill();
             }
             
-            // วาด Label บอกระยะบนแต่ละเส้น
             for(let i=0; i<measurePoints.length - 1; i++) {
                 drawDimension(measurePoints[i], measurePoints[i+1]);
             }
@@ -1727,7 +1728,6 @@
                 drawDimension(measurePoints[measurePoints.length - 1], {x: mouseX, y: mouseY});
             }
 
-            // วงกลมแจ้งเตือน (Snap Guide)
             if (!isMeasureClosed && measurePoints.length > 2 && mouseX !== undefined) {
                  const distToFirst = Math.hypot(mouseX - measurePoints[0].x, mouseY - measurePoints[0].y);
                  if (distToFirst < 15 || (mouseX === measurePoints[0].x && mouseY === measurePoints[0].y)) {
@@ -1797,13 +1797,29 @@
         }
 
         function applyPreviewZoom(zoom) {
+            const container = document.getElementById('preview-scroll-container');
+            const oldScrollLeft = container ? container.scrollLeft : 0;
+            const oldScrollTop = container ? container.scrollTop : 0;
+            
+            const canvas = document.getElementById('preview-modal-canvas');
+            if(!canvas) return;
+            
+            const oldWidth = canvas.offsetWidth;
+            
             pDisplayZoom = zoom;
             const zoomText = document.getElementById('preview-zoom-text');
             if(zoomText) zoomText.textContent = Math.round(pDisplayZoom * 100) + '%';
-            const canvas = document.getElementById('preview-modal-canvas');
-            if(canvas) {
-                canvas.style.width = (canvas.width / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
-                canvas.style.height = (canvas.height / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+            
+            canvas.style.width = (canvas.width / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+            canvas.style.height = (canvas.height / PREVIEW_RENDER_SCALE * pDisplayZoom) + 'px';
+
+            const newWidth = canvas.offsetWidth;
+            
+            // รักษาระยะโฟกัสให้อยู่ตรงกลางตอนซูม
+            if (container && oldWidth > 0 && newWidth !== oldWidth) {
+                const ratio = newWidth / oldWidth;
+                container.scrollLeft = (oldScrollLeft + container.clientWidth / 2) * ratio - container.clientWidth / 2;
+                container.scrollTop = (oldScrollTop + container.clientHeight / 2) * ratio - container.clientHeight / 2;
             }
         }
 
@@ -1816,7 +1832,6 @@
 
         const pContainer = document.getElementById('preview-scroll-container');
         if(pContainer) {
-            // เมาส์: หมุนลูกกลิ้งซูม
             pContainer.addEventListener('wheel', (e) => {
                 if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
@@ -1825,7 +1840,6 @@
                 }
             }, {passive: false});
 
-            // เมาส์: กดคลิกแล้วลากเพื่อเลื่อนหน้า
             pContainer.addEventListener('mousedown', (e) => {
                 pIsPanning = true;
                 pPanStartX = e.clientX;
@@ -1851,7 +1865,6 @@
                 }
             });
 
-            // มือถือ: ใช้ 2 นิ้วถ่างเข้า-ออกเพื่อซูม
             pContainer.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
                     e.preventDefault();
