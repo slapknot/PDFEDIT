@@ -26,7 +26,6 @@
         .drag-active { border-color: #10B981 !important; background-color: #ECFDF5 !important; }
         .page-card { 
             transition: box-shadow 0.1s ease, border-color 0.1s ease; 
-            /* ป้องกันการคลุมดำ Text เวลากดค้างบนมือถือ */
             user-select: none; 
             -webkit-user-select: none;
             -webkit-touch-callout: none;
@@ -34,7 +33,6 @@
         .page-card.selected { border-color: #2563EB !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); background-color: rgba(37, 99, 235, 0.03); }
         .page-card.dragging { opacity: 0.5; border: 2px dashed #2563EB; }
         
-        /* สกอร์บาร์ที่ดูเรียบร้อยขึ้นบน Desktop/Mobile */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -132,6 +130,11 @@
                     <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลดขนาด, แปลงไฟล์ห้ามก๊อปปี้</p></div>
                     <button onclick="openConvertModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
+                <!-- เพิ่มปุ่มเมนูใหม่: แปลง PDF เป็น Word -->
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📄 แปลง PDF เป็น Word</h4><p class="text-[10px] sm:text-xs text-slate-500">แปลงไฟล์พร้อมตารางและรูปภาพ</p></div>
+                    <button onclick="openWordModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
+                </div>
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
                     <button onclick="toolRedaction()" class="bg-red-500 hover:bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
@@ -172,33 +175,51 @@
 
     </main>
 
-    <!-- Modal: Convert & Compress (อัปเดตดึง Streamlit ผ่าน iframe) -->
-    <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-        <!-- ปรับกรอบให้กว้างขึ้นและสูงขึ้น เพื่อให้ iframe แสดงผลได้พอดี ไม่อึดอัด -->
-        <div class="bg-white p-0 rounded-2xl shadow-xl w-full max-w-2xl h-[85vh] sm:h-[80vh] flex flex-col relative overflow-hidden">
-            
-            <!-- ส่วนหัว Modal -->
-            <div class="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 relative z-10">
-                <h3 class="font-bold text-lg sm:text-xl text-slate-800">🗜️ แปลง PDF เป็น Word</h3>
-                <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="text-slate-400 hover:text-red-500 font-bold text-2xl transition leading-none">✖</button>
+    <!-- Modal: Convert & Compress (คงฟังก์ชันเดิมไว้ครบถ้วน) -->
+    <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md relative">
+            <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
+            <div class="flex justify-between items-center mb-4 pr-6">
+                <h3 class="font-bold text-lg sm:text-xl text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h3>
             </div>
-            
-            <!-- นำ URL ของ Streamlit ของคุณ มาใส่ตรง src="https://pdfword.streamlit.app/" -->
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center space-x-3 p-3 border rounded-xl hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="convert-mode" value="lossless" checked class="w-4 h-4 text-blue-600">
+                    <div>
+                        <span class="block font-bold text-sm">บีบอัดปกติ (Lossless Compress)</span>
+                        <span class="text-xs text-slate-500">ลดขนาดไฟล์และล้างข้อมูลขยะในโครงสร้าง</span>
+                    </div>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border rounded-xl hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="convert-mode" value="image" class="w-4 h-4 text-blue-600">
+                    <div>
+                        <span class="block font-bold text-sm">แปลงเป็นรูปภาพ (Uncopyable)</span>
+                        <span class="text-xs text-slate-500">แปลงให้เป็นภาพทั้งไฟล์ ป้องกันการ Drag copy</span>
+                    </div>
+                </label>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="executeConvert()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl text-sm font-bold transition shadow-sm">เริ่มแปลงไฟล์</button>
+                <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold transition">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: PDF to Word (หัวข้อใหม่สำหรับแปลงเป็น Word ผ่าน Streamlit Iframe) -->
+    <div id="modal-word" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white p-0 rounded-2xl shadow-xl w-full max-w-2xl h-[85vh] sm:h-[80vh] flex flex-col relative overflow-hidden">
+            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-20">✖</button>
+            <div class="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 relative z-10 pr-12">
+                <h3 class="font-bold text-lg sm:text-xl text-slate-800">📄 แปลง PDF เป็น Word</h3>
+            </div>
             <div class="flex-1 w-full bg-white relative">
-                <!-- ใส่ Loading Spinner หลอกๆ ไว้ตอน iframe กำลังโหลด -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 z-0">
                     <svg class="animate-spin h-8 w-8 text-blue-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span class="text-sm font-bold">กำลังเชื่อมต่อเซิร์ฟเวอร์แปลงไฟล์...</span>
                 </div>
-                
-                <!-- ตัว iframe จริง (แก้ URL เป็นของคุณ) -->
-                <iframe 
-                    src="https://ชื่อเว็บของคุณ.streamlit.app" 
-                    class="absolute inset-0 w-full h-full border-none z-10 bg-transparent"
-                    allow="clipboard-write"
-                ></iframe>
+                <!-- ใส่ URL ของ Streamlit App ของคุณตรง src="..." -->
+                <iframe src="https://ชื่อเว็บของคุณ.streamlit.app" class="absolute inset-0 w-full h-full border-none z-10 bg-transparent" allow="clipboard-write"></iframe>
             </div>
-            
         </div>
     </div>
 
@@ -375,7 +396,7 @@
                 </div>
             </div>
             
-            <!-- กระดานวาด (แก้ไขโครงสร้าง CSS ป้องกันการโดนตัดขอบเมื่อซูม) -->
+            <!-- กระดานวาด -->
             <div id="measure-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto relative border-2 border-slate-300 shadow-inner">
                 <div class="w-max h-max min-w-full min-h-full flex p-2 sm:p-4">
                     <canvas id="measure-canvas" class="m-auto block shadow-md bg-white max-w-none"></canvas>
@@ -898,6 +919,14 @@
         }
 
         // =========================================================
+        // 📄 แปลง PDF เป็น Word (PDF to Word Tool Modal)
+        // =========================================================
+        function openWordModal() {
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+            document.getElementById('modal-word').classList.remove('hidden');
+        }
+
+        // =========================================================
         // ✂️ แยกไฟล์ (Split Tool)
         // =========================================================
         function openSplitModal() { 
@@ -1177,7 +1206,7 @@
         }
 
         async function toolRedaction() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
             const keyword = prompt("พิมพ์ข้อความที่ต้องการเซ็นเซอร์ (ถมดำถาวร):"); if (!keyword || !keyword.trim()) return;
             const needle = keyword.trim().toLowerCase();
             showLoading("กำลังค้นหาและเซ็นเซอร์ข้อมูล...");
@@ -1202,7 +1231,7 @@
         }
 
         async function toolAutoHighlight() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
             const keyword = prompt("กรอกคำที่ต้องการไฮไลต์:"); if (!keyword || !keyword.trim()) return;
             const needle = keyword.trim().toLowerCase();
             showLoading("กำลังค้นหาและไฮไลต์...");
@@ -1227,7 +1256,7 @@
         }
 
         async function toolExtractExcel() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); showLoading("ดึงตารางลง Excel...");
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); showLoading("ดึงตารางลง Excel...");
             try {
                 let ws_data = [["Page", "Extracted Text Line 1"]];
                 for (let pd of loadedPages) {
@@ -1239,7 +1268,7 @@
             } catch(e) { console.error(e); alert("ข้อผิดพลาด"); } finally { hideLoading(); }
         }
         async function toolExtractText() {
-            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); showLoading("ดึงข้อความ...");
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); showLoading("ดึงข้อความ...");
             try {
                 let fullText = "";
                 for (let pd of loadedPages) {
@@ -1377,9 +1406,7 @@
             mCanvas.style.height = (mCanvas.height / MEASURE_RENDER_SCALE * mDisplayZoom) + 'px';
 
             const newWidth = mCanvas.offsetWidth;
-            const newHeight = mCanvas.offsetHeight;
 
-            // รักษาระยะโฟกัสให้อยู่ตรงกลางตอนซูม
             if (container && oldWidth > 0 && newWidth !== oldWidth) {
                 const ratio = newWidth / oldWidth;
                 container.scrollLeft = (oldScrollLeft + container.clientWidth / 2) * ratio - container.clientWidth / 2;
@@ -1815,7 +1842,6 @@
 
             const newWidth = canvas.offsetWidth;
             
-            // รักษาระยะโฟกัสให้อยู่ตรงกลางตอนซูม
             if (container && oldWidth > 0 && newWidth !== oldWidth) {
                 const ratio = newWidth / oldWidth;
                 container.scrollLeft = (oldScrollLeft + container.clientWidth / 2) * ratio - container.clientWidth / 2;
