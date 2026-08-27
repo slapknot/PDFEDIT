@@ -34,35 +34,65 @@ if uploaded_file is not None:
         
         try:
             # ========================================================
-            # ขั้นตอนที่ 1: PyMuPDF สแกนพิกัด, เก็บรูป, และฝังรหัสลับ
+            # ขั้นตอนที่ 1: PyMuPDF สแกนพิกัดแบบ Deep Scan (X-Ray)
             # ========================================================
-            with st.spinner("1/3 กำลังสแกนพิกัดและสกัดรูปภาพ..."):
+            with st.spinner("1/3 กำลังสแกนพิกัด กราฟ และแบบแปลน..."):
                 doc = fitz.open(pdf_path)
                 img_dict = {}
                 img_count = 0
                 
                 for page in doc:
-                    blocks = page.get_text("blocks")
-                    for b in blocks:
-                        if b[6] == 1:  # ถ้าเป็น Block ประเภท "รูปภาพ"
-                            rect = fitz.Rect(b[:4]) # พิกัด x0, y0, x1, y1
+                    rects_to_capture = []
+                    
+                    # 1.1 สแกนหา Raster Images (รูปภาพปกติที่ฝังอยู่)
+                    for img in page.get_image_info():
+                        rects_to_capture.append(fitz.Rect(img["bbox"]))
+                        
+                    # 1.2 สแกนหา Vector Drawings (ลายเส้น, กราฟ, แบบแปลน)
+                    for d in page.get_drawings():
+                        r = d["rect"]
+                        # กรองเส้นขอบกระดาษ (ใหญ่เกิน) และเส้นคั่นตาราง (เล็กเกิน) ออก
+                        if 15 < r.width < (page.rect.width * 0.9) and 15 < r.height < (page.rect.height * 0.9):
+                            rects_to_capture.append(r)
                             
-                            # แคปเจอร์รูปภาพตรงพิกัดนั้น (ความละเอียด 2 เท่า)
-                            pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(2.0, 2.0))
-                            marker = f"[[IMG_{img_count}]]"
-                            
-                            # เก็บรูปไว้ใน RAM
-                            img_dict[marker] = {
-                                "bytes": pix.tobytes("png"),
-                                "width": rect.width
-                            }
-                            
-                            # ถมสีขาวทับรูปเดิม แล้วพิมพ์รหัสลับลงไปแทนที่
-                            page.draw_rect(rect, color=(1,1,1), fill=(1,1,1))
-                            page.insert_text((rect.x0, rect.y0 + 12), marker, fontsize=10, color=(0,0,0))
-                            img_count += 1
-                            
-                # เซฟเป็น PDF ตัวใหม่ที่มีแต่ตัวหนังสือและรหัสลับ
+                    # 1.3 ยุบรวมพิกัดที่อยู่ติดกัน (Cluster Merging)
+                    merged_rects = []
+                    for r in rects_to_capture:
+                        # ขยายกรอบค้นหา 10 พิกเซลรอบทิศทาง ถ้าชนกันให้ถือว่าเป็นรูปเดียวกัน
+                        r_exp = r + (-10, -10, 10, 10) 
+                        intersecting = [i for i, mr in enumerate(merged_rects) if r_exp.intersects(mr)]
+                        
+                        if not intersecting:
+                            merged_rects.append(r)
+                        else:
+                            # ยุบรวมกรอบที่ซ้อนทับกันให้เป็นก้อนเดียว
+                            first_idx = intersecting[0]
+                            merged_rects[first_idx] = merged_rects[first_idx] | r
+                            for i in reversed(intersecting[1:]):
+                                merged_rects[first_idx] = merged_rects[first_idx] | merged_rects[i]
+                                del merged_rects[i]
+                                
+                    # 1.4 ถ่ายรูป ถมขาว และฝังรหัสลับ
+                    for rect in merged_rects:
+                        # ป้องกัน Error รูปขนาด 0
+                        if rect.width <= 0 or rect.height <= 0: 
+                            continue
+                        
+                        # ถ่ายรูปพิกัดนั้นแบบชัดๆ (ซูม 2 เท่า)
+                        pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(2.0, 2.0))
+                        marker = f"[[IMG_{img_count}]]"
+                        
+                        img_dict[marker] = {
+                            "bytes": pix.tobytes("png"),
+                            "width": rect.width
+                        }
+                        
+                        # ถมสีขาวทับรูปเดิมใน PDF และพิมพ์รหัสลับ (สีแดงให้หาเจอชัวร์ๆ)
+                        page.draw_rect(rect, color=(1,1,1), fill=(1,1,1))
+                        page.insert_text((rect.x0 + 2, rect.y0 + 12), marker, fontsize=10, color=(1,0,0))
+                        img_count += 1
+                        
+                # เซฟ PDF ฉบับที่มีแต่ตัวหนังสือและรหัสลับ
                 doc.save(marked_pdf_path)
                 doc.close()
 
