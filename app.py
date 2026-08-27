@@ -1,59 +1,20 @@
 import streamlit as st
-from pdf2docx import Converter
 import fitz  # PyMuPDF
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Pt, Inches
 import tempfile
 import os
 import io
 
-# 1. ตั้งค่าหน้าเว็บ
-st.set_page_config(
-    page_title="PDF to Word Converter",
-    page_icon="📄",
-    layout="centered"
-)
+st.set_page_config(page_title="PDF to Word (X-Y Engine)", page_icon="📐", layout="centered")
 
-# 2. ซ่อน Header/Footer ของ Streamlit เพื่อความเนียนเมื่ออยู่ใน Iframe
-st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stButton>button {
-        background-color: #2563EB;
-        color: white;
-        font-weight: bold;
-        border-radius: 8px;
-        padding: 0.6rem;
-    }
-    .stButton>button:hover {
-        background-color: #1D4ED8;
-        color: white;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.title("📐 PDF to Word (Hybrid X-Y Engine)")
+st.write("สแกนพิกัด X, Y จาก PDF แล้วเรียงลง Word ตามตำแหน่งบนลงล่างแบบวิศวกรรม")
 
-st.title("📄 PDF to Word Converter")
-st.write("แปลงไฟล์ PDF เป็น Word พร้อมตัวเลือกรักษารูปภาพและตาราง")
-
-# 3. อัปโหลดไฟล์ชั่วคราวลง RAM
-uploaded_file = st.file_uploader("📂 ลากไฟล์ PDF มาวางที่นี่", type=["pdf"])
+uploaded_file = st.file_uploader("📂 ลากไฟล์ PDF มาวาง", type=["pdf"])
 
 if uploaded_file is not None:
-    # 4. เลือกโหมดการแปลง
-    st.markdown("### ⚙️ เลือกรูปแบบการแปลงไฟล์")
-    mode = st.radio(
-        "เลือกโหมดที่เหมาะสมกับเอกสารของคุณ:",
-        options=[
-            "📝 โหมดเน้นข้อความ (พิมพ์แก้ไขต่อได้ - อาจสูญเสียกราฟิกซับซ้อน)",
-            "🖼️ โหมดเน้นหน้าตา (ได้รูปภาพ/แปลน/ตารางมาครบ 100% - แต่แก้ข้อความไม่ได้)"
-        ]
-    )
-
-    if st.button("🚀 เริ่มแปลงไฟล์เป็น Word", use_container_width=True):
-        
-        # เตรียมพื้นที่ชั่วคราว
+    if st.button("🚀 เริ่มสแกนและแปลงไฟล์"):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
             tmp_pdf.write(uploaded_file.getvalue())
             pdf_path = tmp_pdf.name
@@ -61,68 +22,80 @@ if uploaded_file is not None:
         docx_path = pdf_path.replace(".pdf", ".docx")
         
         try:
-            # ---------------------------------------------------------
-            # โหมดที่ 1: เน้นข้อความ (pdf2docx)
-            # ---------------------------------------------------------
-            if "โหมดเน้นข้อความ" in mode:
-                with st.spinner("กำลังแปลงเป็นข้อความ..."):
-                    cv = Converter(pdf_path)
-                    cv.convert(docx_path, start=0, end=None)
-                    cv.close()
+            with st.spinner("กำลังสแกนพิกัด X, Y และสกัดข้อมูล..."):
+                # 1. เปิดไฟล์ PDF ด้วย PyMuPDF
+                doc = fitz.open(pdf_path)
+                word_doc = Document()
+                
+                # ตั้งค่าหน้ากระดาษ Word (Margin แคบๆ เพื่อให้พื้นที่วางตรงกับ PDF มากที่สุด)
+                for section in word_doc.sections:
+                    section.top_margin = Inches(0.5)
+                    section.bottom_margin = Inches(0.5)
+                    section.left_margin = Inches(0.5)
+                    section.right_margin = Inches(0.5)
 
-            # ---------------------------------------------------------
-            # โหมดที่ 2: เน้นหน้าตา (PyMuPDF + python-docx)
-            # ---------------------------------------------------------
-            else:
-                with st.spinner("กำลังดึงรูปภาพและกราฟิกระดับความละเอียดสูง..."):
-                    doc = fitz.open(pdf_path)
-                    word_doc = Document()
-                    
-                    # ลดขอบหน้ากระดาษ Word เพื่อให้รูปภาพเต็มแผ่น
-                    for section in word_doc.sections:
-                        section.top_margin = Inches(0.4)
-                        section.bottom_margin = Inches(0.4)
-                        section.left_margin = Inches(0.4)
-                        section.right_margin = Inches(0.4)
-                    
-                    # เรนเดอร์แต่ละหน้าเป็นภาพ 300 DPI
-                    for page_num in range(len(doc)):
-                        page = doc[page_num]
-                        zoom = 2.0  # เพิ่มความคมชัด 2 เท่า
-                        mat = fitz.Matrix(zoom, zoom)
-                        pix = page.get_pixmap(matrix=mat, alpha=False)
-                        img_bytes = pix.tobytes("png")
+                # 2. วนลูปอ่านทีละหน้า
+                for page_num in range(len(doc)):
+                    if page_num > 0:
+                        word_doc.add_page_break()
                         
-                        img_stream = io.BytesIO(img_bytes)
-                        # แทรกรูปลง Word (กว้างสุดหน้ากระดาษ)
-                        word_doc.add_picture(img_stream, width=Inches(7.2))
+                    page = doc[page_num]
+                    word_doc.add_heading(f'--- หน้าที่ {page_num + 1} ---', level=2)
+                    
+                    # 🎯 หัวใจหลัก: ดึงข้อมูลเป็น "Block" ซึ่งจะแถมพิกัด (x0, y0, x1, y1) มาให้ด้วย
+                    # block_type: 0 = ข้อความ, 1 = รูปภาพ
+                    blocks = page.get_text("blocks")
+                    
+                    # 🎯 อัลกอริทึมจัดเรียง: เรียงตามแกน Y (บนลงล่าง) เป็นหลัก และแกน X (ซ้ายไปขวา) เป็นรอง
+                    # block[1] คือ y0 (พิกัด Y ด้านบน), block[0] คือ x0 (พิกัด X ด้านซ้าย)
+                    blocks.sort(key=lambda b: (b[1], b[0]))
+                    
+                    # 3. วางลง Word ตามลำดับพิกัดที่สแกนมา
+                    for b in blocks:
+                        x0, y0, x1, y1 = b[:4]
+                        block_type = b[6]
                         
-                    word_doc.save(docx_path)
-                    doc.close()
+                        # --- กรณีที่ 1: ถ้าบล็อกนั้นคือ "ข้อความ" ---
+                        if block_type == 0:
+                            text = b[4].strip()
+                            if text:
+                                # วางข้อความลงไป
+                                p = word_doc.add_paragraph(text)
+                                # (ทางเทคนิคสามารถตั้ง Indent ซ้ายขวาตามค่า x0, x1 ได้ด้วย Pt(x0))
+                                
+                        # --- กรณีที่ 2: ถ้าบล็อกนั้นคือ "รูปภาพ" ---
+                        elif block_type == 1:
+                            # ครอปรูปภาพเฉพาะพิกัด (x0, y0, x1, y1) นั้นออกมาจาก PDF
+                            rect = fitz.Rect(x0, y0, x1, y1)
+                            # เรนเดอร์จุดนั้นให้กลายเป็นรูป (ซูม 2 เท่าเพื่อความคมชัด)
+                            pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(2.0, 2.0))
+                            img_bytes = pix.tobytes("png")
+                            
+                            # วางรูปลง Word
+                            img_stream = io.BytesIO(img_bytes)
+                            width_pt = x1 - x0
+                            # แปลงความกว้างจากพิกเซลหน้าจอเป็นหน่วยนิ้วลง Word (โดยประมาณ)
+                            word_doc.add_picture(img_stream, width=Pt(width_pt))
+                
+                # 4. บันทึกไฟล์ Word
+                word_doc.save(docx_path)
+                doc.close()
 
-            # ---------------------------------------------------------
-            # อ่านไฟล์ส่งให้ผู้ใช้ และลบไฟล์ขยะ
-            # ---------------------------------------------------------
+            # ส่งไฟล์กลับให้ผู้ใช้ดาวน์โหลด
             with open(docx_path, "rb") as f:
                 docx_bytes = f.read()
                 
-            st.success("✅ แปลงไฟล์สำเร็จเรียบร้อย!")
-            
-            out_name = uploaded_file.name.rsplit(".", 1)[0] + "_Converted.docx"
+            st.success("✅ สแกนและประกอบไฟล์สำเร็จ!")
             st.download_button(
-                label="📥 คลิกที่นี่เพื่อดาวน์โหลดไฟล์ Word",
+                label="📥 ดาวน์โหลดไฟล์ Word",
                 data=docx_bytes,
-                file_name=out_name,
+                file_name="XY_Hybrid_Converted.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
             
         except Exception as e:
-            st.error(f"❌ เกิดข้อผิดพลาด: {str(e)}")
-            
+            st.error(f"❌ Error: {str(e)}")
         finally:
-            # คลีน RAM/Temp storage ทันทีเพื่อความปลอดภัย
-            if os.path.exists(pdf_path): 
-                os.remove(pdf_path)
-            if os.path.exists(docx_path): 
-                os.remove(docx_path)
+            if os.path.exists(pdf_path): os.remove(pdf_path)
+            if os.path.exists(docx_path): os.remove(docx_path)
