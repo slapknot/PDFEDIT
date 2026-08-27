@@ -859,14 +859,14 @@
         }
 
         // =========================================================
-        // 📄 แปลง PDF เป็น Word แบบโลคัล (100% Local RAM Secure Conversion)
+        // 📄 แปลง PDF เป็น Word แบบโลคัล (100% Local RAM Secure Conversion - ป้องกัน Error)
         // =========================================================
         async function toolPDFToWordLocal() {
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสารในระบบ");
             showLoading("กำลังประมวลผลแปลงเป็น Word ในเครื่องของคุณ...");
 
             try {
-                const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+                const { Document, Packer, Paragraph, TextRun } = docx;
                 const docChildren = [];
 
                 for (let i = 0; i < loadedPages.length; i++) {
@@ -874,8 +874,10 @@
                     const page = await pd.pdfDocJs.getPage(pd.pageNumber);
                     const textContent = await page.getTextContent();
 
-                    // จัดระเบียบข้อความตามพิกัดแกน Y (จัดเรียงบรรทัดไม่ให้ตีกัน)
-                    let items = textContent.items.filter(item => item.str && item.str.trim() !== "");
+                    // กรองเฉพาะข้อความที่มีตัวอักษร และมีค่าพิกัด transform ครบถ้วนเพื่อป้องกัน Error
+                    let items = textContent.items.filter(item => item.str && item.str.trim() !== "" && item.transform && item.transform.length >= 6);
+                    
+                    // จัดเรียงบรรทัดตามพิกัด Y และ X
                     items.sort((a, b) => {
                         let yDiff = b.transform[5] - a.transform[5];
                         if (Math.abs(yDiff) < 5) {
@@ -884,16 +886,14 @@
                         return yDiff;
                     });
 
-                    // หัวข้อบอกหน้าเอกสาร
+                    // เพิ่มหัวข้อบอกหน้าเอกสาร
                     docChildren.push(
                         new Paragraph({
-                            heading: HeadingLevel.HEADING_2,
-                            children: [new TextRun({ text: `หน้าที่ ${i + 1}`, bold: true, color: "2563EB" })],
+                            children: [new TextRun({ text: `--- หน้าที่ ${i + 1} ---`, bold: true, size: 26, color: "2563EB" })],
                             spacing: { before: 300, after: 150 }
                         })
                     );
 
-                    // รวมข้อความทีละบรรทัดเข้าย่อหน้า
                     let currentLineText = "";
                     let lastY = null;
 
@@ -914,6 +914,7 @@
                             currentLineText += item.str + " ";
                         }
                     }
+                    
                     if (currentLineText.trim() !== "") {
                         docChildren.push(
                             new Paragraph({
@@ -929,14 +930,14 @@
                     sections: [{ properties: {}, children: docChildren }]
                 });
 
-                // แปลงเป็น Blob และดาวน์โหลดลงเครื่องทันทีอัตโนมัติ
+                // แปลงเป็น Blob และดาวน์โหลดลงเครื่องทันที
                 const blob = await Packer.toBlob(doc);
                 downloadFile(blob, "Converted_Document.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
                 
-                alert("แปลงเป็น Word สำเร็จและดาวน์โหลดลงเครื่องเรียบร้อยแล้ว (ข้อมูลปลอดภัย 100% ประมวลผลในเครื่องของคุณ)");
+                alert("แปลงเป็น Word สำเร็จและดาวน์โหลดลงเครื่องเรียบร้อยแล้วครับ!");
             } catch (err) {
-                console.error(err);
-                alert("เกิดข้อผิดพลาดในการแปลงไฟล์");
+                console.error("PDF to Word Error:", err);
+                alert("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err.message);
             } finally {
                 hideLoading();
             }
