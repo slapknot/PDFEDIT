@@ -74,23 +74,40 @@ if uploaded_file is not None:
                                 
                     # 1.4 ถ่ายรูป ถมขาว และฝังรหัสลับ
                     for rect in merged_rects:
-                        # ป้องกัน Error รูปขนาด 0
-                        if rect.width <= 0 or rect.height <= 0: 
+                        # 🛡️ SAFETY 1: ตัดขอบกล่องไม่ให้ทะลุหน้ากระดาษเด็ดขาด (แก้ Error code=4)
+                        rect = rect.intersect(page.rect)
+                        
+                        # 🛡️ SAFETY 2: ป้องกันกล่องพิกัดติดลบ กว้าง 0 หรือเล็กเกินไป
+                        if rect.width < 5 or rect.height < 5: 
                             continue
                         
-                        # ถ่ายรูปพิกัดนั้นแบบชัดๆ (ซูม 2 เท่า)
-                        pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(2.0, 2.0))
-                        marker = f"[[IMG_{img_count}]]"
-                        
-                        img_dict[marker] = {
-                            "bytes": pix.tobytes("png"),
-                            "width": rect.width
-                        }
-                        
-                        # ถมสีขาวทับรูปเดิมใน PDF และพิมพ์รหัสลับ (สีแดงให้หาเจอชัวร์ๆ)
-                        page.draw_rect(rect, color=(1,1,1), fill=(1,1,1))
-                        page.insert_text((rect.x0 + 2, rect.y0 + 12), marker, fontsize=10, color=(1,0,0))
-                        img_count += 1
+                        try:
+                            # ถ่ายรูปพิกัดนั้นแบบชัดๆ (ซูม 2 เท่า)
+                            pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(2.0, 2.0))
+                            
+                            # ป้องกันกรณีที่ภาพที่ได้มีความกว้าง/ยาวเป็น 0
+                            if pix.width == 0 or pix.height == 0:
+                                continue
+
+                            marker = f"[[IMG_{img_count}]]"
+                            
+                            img_dict[marker] = {
+                                "bytes": pix.tobytes("png"),
+                                "width": rect.width
+                            }
+                            
+                            # ถมสีขาวทับรูปเดิมใน PDF และพิมพ์รหัสลับ (สีแดง)
+                            page.draw_rect(rect, color=(1,1,1), fill=(1,1,1))
+                            
+                            # ป้องกันตัวหนังสือรหัสลับตกขอบกระดาษด้านล่าง
+                            text_y = rect.y0 + 12 if rect.y0 + 12 < page.rect.y1 else page.rect.y1 - 5
+                            page.insert_text((rect.x0 + 2, text_y), marker, fontsize=10, color=(1,0,0))
+                            
+                            img_count += 1
+                            
+                        except Exception as pic_err:
+                            # 🛡️ SAFETY 3: ถ้ารูปไหนมีโครงสร้างพังระดับลึก ให้ปล่อยข้ามไป ระบบจะได้ทำงานต่อจนจบ
+                            continue
                         
                 # เซฟ PDF ฉบับที่มีแต่ตัวหนังสือและรหัสลับ
                 doc.save(marked_pdf_path)
