@@ -13,8 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- SheetJS for Excel Extraction -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <!-- Docx Library สำหรับสร้างไฟล์ Word ใน RAM เครื่อง 100% -->
-    <script src="https://cdn.jsdelivr.net/npm/docx@7.3.0/build/docx.js"></script>
+    <!-- Docx Library (แก้ไขลิงก์ UMD สำหรับรันบน Browser โดยตรง) -->
+    <script src="https://unpkg.com/docx@7.3.0/build/index.umd.js"></script>
     
     <!-- Mobile Drag & Drop Polyfill -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
@@ -859,14 +859,19 @@
         }
 
         // =========================================================
-        // 📄 แปลง PDF เป็น Word แบบโลคัล (100% Local RAM Secure Conversion - ป้องกัน Error)
+        // 📄 แปลง PDF เป็น Word แบบโลคัล (100% Local RAM Secure Conversion)
         // =========================================================
         async function toolPDFToWordLocal() {
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสารในระบบ");
             showLoading("กำลังประมวลผลแปลงเป็น Word ในเครื่องของคุณ...");
 
             try {
-                const { Document, Packer, Paragraph, TextRun } = docx;
+                // ตรวจสอบและดึงค่าจาก window.docx อย่างปลอดภัย
+                const docxLib = window.docx;
+                if (!docxLib) {
+                    throw new Error("ยังโหลดไลบรารี docx ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
+                }
+                const { Document, Packer, Paragraph, TextRun } = docxLib;
                 const docChildren = [];
 
                 for (let i = 0; i < loadedPages.length; i++) {
@@ -874,10 +879,8 @@
                     const page = await pd.pdfDocJs.getPage(pd.pageNumber);
                     const textContent = await page.getTextContent();
 
-                    // กรองเฉพาะข้อความที่มีตัวอักษร และมีค่าพิกัด transform ครบถ้วนเพื่อป้องกัน Error
                     let items = textContent.items.filter(item => item.str && item.str.trim() !== "" && item.transform && item.transform.length >= 6);
                     
-                    // จัดเรียงบรรทัดตามพิกัด Y และ X
                     items.sort((a, b) => {
                         let yDiff = b.transform[5] - a.transform[5];
                         if (Math.abs(yDiff) < 5) {
@@ -886,7 +889,6 @@
                         return yDiff;
                     });
 
-                    // เพิ่มหัวข้อบอกหน้าเอกสาร
                     docChildren.push(
                         new Paragraph({
                             children: [new TextRun({ text: `--- หน้าที่ ${i + 1} ---`, bold: true, size: 26, color: "2563EB" })],
@@ -925,12 +927,10 @@
                     }
                 }
 
-                // สร้างเอกสาร Word ใน RAM
                 const doc = new Document({
                     sections: [{ properties: {}, children: docChildren }]
                 });
 
-                // แปลงเป็น Blob และดาวน์โหลดลงเครื่องทันที
                 const blob = await Packer.toBlob(doc);
                 downloadFile(blob, "Converted_Document.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
                 
