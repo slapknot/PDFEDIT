@@ -13,6 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- SheetJS for Excel Extraction -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Docx Library สำหรับสร้างไฟล์ Word ใน RAM เครื่อง 100% -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.3.0/build/docx.js"></script>
     
     <!-- Mobile Drag & Drop Polyfill -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
@@ -48,7 +50,7 @@
                 <div class="flex items-center">
                     <span class="text-xl sm:text-2xl mr-1 sm:mr-2">📄</span>
                     <span class="font-bold text-lg sm:text-xl text-blue-600 truncate">PDF Master Tools</span>
-                    <span class="ml-2 sm:ml-3 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">Pro Edition</span>
+                    <span class="ml-2 sm:ml-3 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">Secure Local Edition</span>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-3">
                     <span id="page-counter" class="text-[10px] sm:text-sm font-semibold text-slate-500 hidden sm:inline-block">ยังไม่ได้โหลดเอกสาร</span>
@@ -69,13 +71,13 @@
             <div id="drop-content" class="pointer-events-none">
                 <span class="text-3xl sm:text-4xl block mb-2">📥</span>
                 <p class="text-blue-600 font-bold text-base sm:text-lg">แตะที่นี่เพื่อเลือกไฟล์ PDF</p>
-                <p class="text-slate-400 text-xs sm:text-sm mt-1">ทำงานผ่านเบราว์เซอร์ 100% ปลอดภัย ไม่ต้องอัปโหลดขึ้นเซิร์ฟเวอร์</p>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">ประมวลผลใน RAM เครื่อง 100% ปลอดภัยขั้นสูงสุด ไม่ส่งข้อมูลออกเน็ต</p>
             </div>
             
             <div id="file-info" class="hidden flex flex-col sm:flex-row items-center justify-between pointer-events-none gap-3">
                 <div class="text-center sm:text-left">
                     <p id="file-name" class="text-slate-800 font-bold text-sm sm:text-base">โหลดเอกสารสำเร็จ</p>
-                    <p class="text-emerald-600 text-[10px] sm:text-xs font-bold mt-0.5">✅ รองรับการแตะค้าง 300ms เพื่อลากย้ายหน้าบนมือถือ</p>
+                    <p class="text-emerald-600 text-[10px] sm:text-xs font-bold mt-0.5">✅ พร้อมใช้งานเครื่องมือทั้งหมดแบบปลอดภัย</p>
                 </div>
                 <div class="flex space-x-2 pointer-events-auto">
                     <button onclick="document.getElementById('file-input').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">➕ เพิ่มไฟล์</button>
@@ -130,10 +132,10 @@
                     <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">🗜️ แปลง & บีบอัดไฟล์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลดขนาด, แปลงไฟล์ห้ามก๊อปปี้</p></div>
                     <button onclick="openConvertModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
-                <!-- เพิ่มปุ่มเมนูใหม่: แปลง PDF เป็น Word -->
+                <!-- ปุ่มแปลง PDF เป็น Word แบบโลคัลในเครื่อง 100% -->
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📄 แปลง PDF เป็น Word</h4><p class="text-[10px] sm:text-xs text-slate-500">แปลงไฟล์พร้อมตารางและรูปภาพ</p></div>
-                    <button onclick="openWordModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
+                    <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">📄 แปลง PDF เป็น Word</h4><p class="text-[10px] sm:text-xs text-slate-500">แปลงข้อความลง .docx ในเครื่องทันที</p></div>
+                    <button onclick="toolPDFToWordLocal()" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition">ใช้งาน</button>
                 </div>
                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><h4 class="font-bold text-xs sm:text-sm text-slate-800">⬛ ถมดำเซ็นเซอร์</h4><p class="text-[10px] sm:text-xs text-slate-500">ลบข้อมูลสำคัญออกถาวร</p></div>
@@ -175,7 +177,7 @@
 
     </main>
 
-    <!-- Modal: Convert & Compress (คงฟังก์ชันเดิมไว้ครบถ้วน) -->
+    <!-- Modal: Convert & Compress -->
     <div id="modal-convert" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xl w-full max-w-md relative">
             <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
@@ -202,29 +204,6 @@
                 <button onclick="executeConvert()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl text-sm font-bold transition shadow-sm">เริ่มแปลงไฟล์</button>
                 <button onclick="document.getElementById('modal-convert').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold transition">ยกเลิก</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal: PDF to Word (เปลี่ยนเป็นปุ่มคลิกเปิดแท็บใหม่ ป้องกัน Iframe ค้าง) -->
-    <div id="modal-word" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md relative text-center">
-            <!-- ปุ่ม X ปิด -->
-            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
-            
-            <div class="text-4xl mb-3">📄</div>
-            <h3 class="font-bold text-xl text-slate-800 mb-2">แปลง PDF เป็น Word</h3>
-            <p class="text-xs sm:text-sm text-slate-500 mb-6">
-                เพื่อประสิทธิภาพสูงสุดและความปลอดภัยของไฟล์ ระบบจะเปิดหน้าต่างเซิร์ฟเวอร์แปลงไฟล์แยกต่างหาก
-            </p>
-
-            <!-- เปลี่ยนลิงก์ https://ชื่อเว็บของคุณ.streamlit.app เป็นลิงก์จริงของคุณ -->
-            <a href="https://pdfword.streamlit.app/" target="_blank" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md mb-3">
-                🚀 เปิดหน้าแปลงไฟล์ (แท็บใหม่)
-            </a>
-            
-            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm transition">
-                ปิดหน้าต่างนี้
-            </button>
         </div>
     </div>
 
@@ -354,9 +333,7 @@
                 <h3 class="font-bold text-base sm:text-xl text-slate-800">📏 เครื่องมือวัดระยะ & พื้นที่ (Pro Edition)</h3>
             </div>
             
-            <!-- Toolbar ควบคุม -->
             <div class="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-4 items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200">
-                <!-- แถบ 1: เลือกหน้า (ดึงจากไฟล์หน้าหลัก) -->
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     <span class="text-[10px] sm:text-sm font-bold text-slate-700 whitespace-nowrap">เลือกหน้า:</span>
                     <select id="measure-page" class="border p-1.5 sm:p-2 text-xs sm:text-sm rounded bg-white font-bold cursor-pointer text-blue-600 outline-none w-full sm:w-48" onchange="changeMeasurePage()"></select>
@@ -364,7 +341,6 @@
                 
                 <div class="h-6 border-l border-slate-300 mx-1 hidden lg:block"></div>
                 
-                <!-- แถบ 2: โหมด เลื่อน(Pan) / วาด(Draw) -->
                 <div class="flex bg-slate-200 p-1 rounded-lg w-full sm:w-auto justify-center">
                     <button id="measure-mode-pan" onclick="setMeasureMode('pan')" class="flex-1 sm:flex-none px-3 py-1.5 rounded bg-white shadow text-[10px] sm:text-xs font-bold text-blue-600 cursor-pointer transition">✋ เลื่อนดู (Pan)</button>
                     <button id="measure-mode-draw" onclick="setMeasureMode('draw')" class="flex-1 sm:flex-none px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer transition">📏 ขีดเส้น (Draw)</button>
@@ -372,14 +348,12 @@
 
                 <div class="h-6 border-l border-slate-300 mx-1 hidden lg:block"></div>
 
-                <!-- แถบ 3: Zoom In/Out -->
                 <div class="flex items-center bg-white border border-slate-300 rounded-lg overflow-hidden w-full sm:w-auto">
                     <button onclick="changeMeasureZoom(-0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base w-10">-</button>
                     <span id="measure-zoom-text" class="text-[10px] sm:text-xs font-bold w-12 text-center border-x border-slate-200 py-1.5">100%</span>
                     <button onclick="changeMeasureZoom(0.2)" class="px-3 py-1 text-slate-600 hover:bg-slate-100 font-bold transition text-sm sm:text-base w-10">+</button>
                 </div>
 
-                <!-- แถบ 4: สเกลและรีเซ็ต -->
                 <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto justify-between">
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] sm:text-xs font-bold text-slate-700 whitespace-nowrap">Scale 1:</label>
@@ -389,7 +363,6 @@
                 </div>
             </div>
 
-            <!-- กล่องแสดงผลลัพธ์ -->
             <div class="flex justify-between items-center bg-emerald-50 border border-emerald-200 p-2 sm:p-3 rounded-lg mb-2 sm:mb-3 shadow-sm">
                 <span class="text-[10px] sm:text-xs text-slate-600 font-bold">
                     <span class="hidden sm:inline">💡 กด Shift ค้างตอนลาก = ล็อกแกน (Ortho) | </span>
@@ -401,7 +374,6 @@
                 </div>
             </div>
             
-            <!-- กระดานวาด -->
             <div id="measure-scroll-container" class="flex-1 bg-slate-300 rounded-lg overflow-auto relative border-2 border-slate-300 shadow-inner">
                 <div class="w-max h-max min-w-full min-h-full flex p-2 sm:p-4">
                     <canvas id="measure-canvas" class="m-auto block shadow-md bg-white max-w-none"></canvas>
@@ -424,7 +396,7 @@
         </div>
     </div>
 
-    <!-- Modal: Large Preview (พรีวิวดูหน้าชัดๆ พร้อม Zoom/Pan) -->
+    <!-- Modal: Large Preview -->
     <div id="modal-preview" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-2 sm:p-4" onclick="closePreviewModal(event)">
         <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl max-w-6xl w-full h-[95vh] flex flex-col relative" onclick="event.stopPropagation()">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 pr-6">
@@ -840,43 +812,6 @@
             }
         }
 
-        function mapVisualToUnrotated(vx, vy, meta) {
-            if (meta.baked) return { x: vx, y: vy, angleDeg: 0 };
-            const r = ((meta.rotation % 360) + 360) % 360;
-            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
-            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-            
-            let ox, oy;
-            if (r === 0) { ox = vx; oy = vy; }
-            else if (r === 90) { ox = uW - vy; oy = vx; }
-            else if (r === 180) { ox = uW - vx; oy = uH - vy; }
-            else if (r === 270) { ox = vy; oy = uH - vx; }
-            
-            ox += (meta.offsetX || 0);
-            oy += (meta.offsetY || 0);
-            
-            return { x: ox, y: oy, angleDeg: r };
-        }
-
-        function mapUnrotatedToVisual(ox, oy, meta) {
-            if (meta.baked) return { x: ox, y: oy, angleDeg: 0 }; 
-            
-            let nox = ox - (meta.offsetX || 0);
-            let noy = oy - (meta.offsetY || 0);
-
-            const r = ((meta.rotation % 360) + 360) % 360;
-            const uW = (r === 90 || r === 270) ? meta.vH : meta.vW;
-            const uH = (r === 90 || r === 270) ? meta.vW : meta.vH;
-            
-            let vx, vy;
-            if (r === 0) { vx = nox; vy = noy; }
-            else if (r === 90) { vx = noy; vy = uW - nox; }
-            else if (r === 180) { vx = uW - nox; vy = uH - noy; }
-            else if (r === 270) { vx = uH - noy; vy = nox; }
-            
-            return { x: vx, y: vy, angleDeg: r };
-        }
-
         async function saveOrganizerPDF() {
             if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); 
             showLoading("กำลังสร้างไฟล์ PDF ใหม่...");
@@ -924,11 +859,87 @@
         }
 
         // =========================================================
-        // 📄 แปลง PDF เป็น Word (PDF to Word Tool Modal)
+        // 📄 แปลง PDF เป็น Word แบบโลคัล (100% Local RAM Secure Conversion)
         // =========================================================
-        function openWordModal() {
-            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
-            document.getElementById('modal-word').classList.remove('hidden');
+        async function toolPDFToWordLocal() {
+            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสารในระบบ");
+            showLoading("กำลังประมวลผลแปลงเป็น Word ในเครื่องของคุณ...");
+
+            try {
+                const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+                const docChildren = [];
+
+                for (let i = 0; i < loadedPages.length; i++) {
+                    const pd = loadedPages[i];
+                    const page = await pd.pdfDocJs.getPage(pd.pageNumber);
+                    const textContent = await page.getTextContent();
+
+                    // จัดระเบียบข้อความตามพิกัดแกน Y (จัดเรียงบรรทัดไม่ให้ตีกัน)
+                    let items = textContent.items.filter(item => item.str && item.str.trim() !== "");
+                    items.sort((a, b) => {
+                        let yDiff = b.transform[5] - a.transform[5];
+                        if (Math.abs(yDiff) < 5) {
+                            return a.transform[4] - b.transform[4];
+                        }
+                        return yDiff;
+                    });
+
+                    // หัวข้อบอกหน้าเอกสาร
+                    docChildren.push(
+                        new Paragraph({
+                            heading: HeadingLevel.HEADING_2,
+                            children: [new TextRun({ text: `หน้าที่ ${i + 1}`, bold: true, color: "2563EB" })],
+                            spacing: { before: 300, after: 150 }
+                        })
+                    );
+
+                    // รวมข้อความทีละบรรทัดเข้าย่อหน้า
+                    let currentLineText = "";
+                    let lastY = null;
+
+                    for (let item of items) {
+                        let y = Math.round(item.transform[5]);
+                        if (lastY === null || Math.abs(y - lastY) > 8) {
+                            if (currentLineText.trim() !== "") {
+                                docChildren.push(
+                                    new Paragraph({
+                                        children: [new TextRun({ text: currentLineText.trim(), size: 22 })],
+                                        spacing: { after: 120 }
+                                    })
+                                );
+                            }
+                            currentLineText = item.str + " ";
+                            lastY = y;
+                        } else {
+                            currentLineText += item.str + " ";
+                        }
+                    }
+                    if (currentLineText.trim() !== "") {
+                        docChildren.push(
+                            new Paragraph({
+                                children: [new TextRun({ text: currentLineText.trim(), size: 22 })],
+                                spacing: { after: 120 }
+                            })
+                        );
+                    }
+                }
+
+                // สร้างเอกสาร Word ใน RAM
+                const doc = new Document({
+                    sections: [{ properties: {}, children: docChildren }]
+                });
+
+                // แปลงเป็น Blob และดาวน์โหลดลงเครื่องทันทีอัตโนมัติ
+                const blob = await Packer.toBlob(doc);
+                downloadFile(blob, "Converted_Document.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+                
+                alert("แปลงเป็น Word สำเร็จและดาวน์โหลดลงเครื่องเรียบร้อยแล้ว (ข้อมูลปลอดภัย 100% ประมวลผลในเครื่องของคุณ)");
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการแปลงไฟล์");
+            } finally {
+                hideLoading();
+            }
         }
 
         // =========================================================
@@ -1211,7 +1222,7 @@
         }
 
         async function toolRedaction() {
-            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
             const keyword = prompt("พิมพ์ข้อความที่ต้องการเซ็นเซอร์ (ถมดำถาวร):"); if (!keyword || !keyword.trim()) return;
             const needle = keyword.trim().toLowerCase();
             showLoading("กำลังค้นหาและเซ็นเซอร์ข้อมูล...");
@@ -1236,7 +1247,7 @@
         }
 
         async function toolAutoHighlight() {
-            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร");
             const keyword = prompt("กรอกคำที่ต้องการไฮไลต์:"); if (!keyword || !keyword.trim()) return;
             const needle = keyword.trim().toLowerCase();
             showLoading("กำลังค้นหาและไฮไลต์...");
@@ -1261,7 +1272,7 @@
         }
 
         async function toolExtractExcel() {
-            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); showLoading("ดึงตารางลง Excel...");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); showLoading("ดึงตารางลง Excel...");
             try {
                 let ws_data = [["Page", "Extracted Text Line 1"]];
                 for (let pd of loadedPages) {
@@ -1273,7 +1284,7 @@
             } catch(e) { console.error(e); alert("ข้อผิดพลาด"); } finally { hideLoading(); }
         }
         async function toolExtractText() {
-            if (loadedPages.length === 0) return alert("ยังไม่มีเอกสาร"); showLoading("ดึงข้อความ...");
+            if (loadedPages.length === 0) return alert("ไม่มีเอกสาร"); showLoading("ดึงข้อความ...");
             try {
                 let fullText = "";
                 for (let pd of loadedPages) {
@@ -1401,7 +1412,6 @@
             const oldScrollLeft = container ? container.scrollLeft : 0;
             const oldScrollTop = container ? container.scrollTop : 0;
             const oldWidth = mCanvas.offsetWidth;
-            const oldHeight = mCanvas.offsetHeight;
 
             mDisplayZoom = zoom;
             const zoomText = document.getElementById('measure-zoom-text');
@@ -1561,7 +1571,6 @@
             updateMeasureResult();
         }
 
-        // ============ Mouse Panning & Drawing ============
         mCanvas.addEventListener('mousedown', (e) => {
             if (measureMode === 'pan') {
                 isPanning = true;
@@ -1597,7 +1606,6 @@
             handleMeasurePointerEvent(e.clientX, e.clientY, e.shiftKey);
         });
 
-        // ============ Touch (Mobile) Pinch Zoom & Drawing ============
         mCanvas.addEventListener('touchstart', (e) => { 
             if (e.touches.length === 2) {
                 e.preventDefault();
@@ -1773,7 +1781,7 @@
         }
 
         // =========================================================
-        // 🔍 Preview Modal Logic (ซูมและเลื่อนดูหน้าชัดๆ)
+        // 🔍 Preview Modal Logic
         // =========================================================
         const PREVIEW_RENDER_SCALE = 2.0;
         let pDisplayZoom = 1.0;
