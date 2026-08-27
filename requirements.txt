@@ -1,2 +1,4 @@
 streamlit
 pdf2docx
+PyMuPDF
+python-docx
