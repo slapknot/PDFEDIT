@@ -205,21 +205,26 @@
         </div>
     </div>
 
-    <!-- Modal: PDF to Word (หัวข้อใหม่สำหรับแปลงเป็น Word ผ่าน Streamlit Iframe) -->
-    <div id="modal-word" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white p-0 rounded-2xl shadow-xl w-full max-w-2xl h-[85vh] sm:h-[80vh] flex flex-col relative overflow-hidden">
-            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-20">✖</button>
-            <div class="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 relative z-10 pr-12">
-                <h3 class="font-bold text-lg sm:text-xl text-slate-800">📄 แปลง PDF เป็น Word</h3>
-            </div>
-            <div class="flex-1 w-full bg-white relative">
-                <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 z-0">
-                    <svg class="animate-spin h-8 w-8 text-blue-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span class="text-sm font-bold">กำลังเชื่อมต่อเซิร์ฟเวอร์แปลงไฟล์...</span>
-                </div>
-                <!-- ใส่ URL ของ Streamlit App ของคุณตรง src="..." -->
-                <iframe src="https://pdfword.streamlit.app/" allow="clipboard-write"></iframe>
-            </div>
+    <!-- Modal: PDF to Word (เปลี่ยนเป็นปุ่มคลิกเปิดแท็บใหม่ ป้องกัน Iframe ค้าง) -->
+    <div id="modal-word" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md relative text-center">
+            <!-- ปุ่ม X ปิด -->
+            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-xl sm:text-2xl transition leading-none z-10">✖</button>
+            
+            <div class="text-4xl mb-3">📄</div>
+            <h3 class="font-bold text-xl text-slate-800 mb-2">แปลง PDF เป็น Word</h3>
+            <p class="text-xs sm:text-sm text-slate-500 mb-6">
+                เพื่อประสิทธิภาพสูงสุดและความปลอดภัยของไฟล์ ระบบจะเปิดหน้าต่างเซิร์ฟเวอร์แปลงไฟล์แยกต่างหาก
+            </p>
+
+            <!-- เปลี่ยนลิงก์ https://ชื่อเว็บของคุณ.streamlit.app เป็นลิงก์จริงของคุณ -->
+            <a href="https://pdfword.streamlit.app/" target="_blank" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md mb-3">
+                🚀 เปิดหน้าแปลงไฟล์ (แท็บใหม่)
+            </a>
+            
+            <button onclick="document.getElementById('modal-word').classList.add('hidden')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm transition">
+                ปิดหน้าต่างนี้
+            </button>
         </div>
     </div>
 
